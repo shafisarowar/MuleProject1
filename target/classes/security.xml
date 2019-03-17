@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:ldap="http://www.mulesoft.org/schema/mule/ldap"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ldap http://www.mulesoft.org/schema/mule/ldap/current/mule-ldap.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+   <ldap:config name="LDAP" authDn="CN=LDAP Lookup Service Account,OU=Service Accounts,OU=Enterprise Management,DC=pr-americas,DC=pernod-ricard,DC=group" authPassword="${coreapi.ldap.pwd}" url="${coreapi.ldap}" referral="FOLLOW" doc:name="LDAP" initialPoolSize="0" maxPoolSize="0" poolTimeout="0" authentication="simple">
+        <reconnect/>
+    </ldap:config>
+    <ldap:config name="LDAP_User_Config" authDn="#[flowVars.dn]" authPassword="#[flowVars.password]" url="${coreapi.ldap}" doc:name="LDAP: Configuration" maxPoolSize="0" poolTimeout="0" authentication="simple" initialPoolSize="0">
+        <ldap:cache-config initialCapacity="0" expireAfterAccess="0" expireAfterWrite="0"/>
+        <reconnect/>
+    </ldap:config>
+    <ldap:config name="LDAP__Configuration" authDn="#[flowVars.dn]" authPassword="#[flowVars.password]" authentication="simple" url="${coreapi.ldap}" doc:name="LDAP: Configuration"/>
+   
+    <flow name="securityFlow">
+        <logger message="#['CUSTOM LOG : First LDAP Search with Payload '+payload]" level="INFO" doc:name="Logger"/>
+        <ldap:search-one config-ref="LDAP" baseDn="dc=pr-americas,dc=pernod-ricard,dc=group" filter="sAMAccountName=#[flowVars.username]" scope="SUB_TREE" doc:name="SearchDN" />
+        <logger message="#['CUSTOM LOG : LDAP Search Successful ']" level="INFO" doc:name="Logger"/>
+        <choice doc:name="DN Available for Username?">
+            <when expression="#[!payload.isEmpty()]">
+                <set-variable variableName="dn" value="#[payload.dn]" doc:name="getDN"/>
+                <logger message="#['CUSTOM LOG : LDAP BIND']" level="INFO" doc:name="Logger"/>
+                <ldap:bind config-ref="LDAP_User_Config"   doc:name="LDAP_Bind" />
+                <logger message="#['CUSTOM LOG : LDAP UNBIND']" level="INFO" doc:name="Logger"/>
+                <ldap:unbind config-ref="LDAP_User_Config" doc:name="LDAP_Unbind"/>
+                <set-payload value="#[['authentication':true]]" doc:name="Authentication Successful"/>
+            </when>
+            <otherwise>
+                <logger message="#['Authentication Failed']" level="INFO" doc:name="Authentication Failure"/>
+                <set-payload value="#[['authentication':false]]" doc:name="Authentication Failed"/>
+            </otherwise>
+        </choice>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#[['authentication':false]]" doc:name="Set False Payload"/>
+            <set-variable variableName="error_msg" value="#['Failed to Authenticate']" doc:name="Error"/>
+            <flow-ref name="NotifyUsersFromCloudhub" doc:name="NotifyUsers"/>
+        </catch-exception-strategy>
+    </flow>
+    <flow name="Ecommapi:SecurityFlow">
+        <db:select config-ref="App_DB_Configuration" doc:name="Check DB for Token">
+            <db:parameterized-query><![CDATA[SELECT ROLENAME
+  FROM OCELOT.APPS_AUTHENTICATION_TOKEN
+ WHERE APP_NAME = #[app.name] and UPPER(USERNAME) = UPPER(#[message.inboundProperties.'username'])
+and TOKEN_VALUE =  #[message.inboundProperties.'api-key']]]></db:parameterized-query>
+        </db:select>
+        <validation:validate-size config-ref="Validation_Configuration" value="#[message.payload]" min="1" max="1" doc:name="Null Payload Validation"/>
+        <set-variable variableName="EcommAPIAuthentication" value="true" doc:name="EcommAPIAuthentication" mimeType="application/java"/>
+       <choice-exception-strategy doc:name="UnauthenticatedAccessExceptions">
+            <catch-exception-strategy when="exception.causedBy(org.mule.extension.validation.api.ValidationException)" doc:name="Catch Exception Strategy" enableNotifications="false" logException="false">
+                <set-variable variableName="EcommAPIAuthentication" value="false" mimeType="application/java" doc:name="EcommAPIAuthentication"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="Ecommapi:webhook-security">
+      <choice doc:name="Auth Key Available for Channel ?">
+            <when expression="#[message.inboundProperties.'x-shopify-hmac-sha256' !=null and message.inboundProperties.'x-shopify-hmac-sha256'.length()&gt;=44]">
+                <logger message="#['Authentication Successful']" level="DEBUG" doc:name="Authentication Success"/>
+                <set-variable variableName="webhookAuth" value="true" mimeType="application/java" doc:name="webhookAuth"/>
+            </when>
+            <otherwise>
+                <logger message="#['Authentication Failed']" level="INFO" doc:name="Authentication Failure"/>
+                <set-variable variableName="webhookAuth" value="false" mimeType="application/java" doc:name="webhookAuth"/>
+            </otherwise>
+        </choice>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#[['authentication':false]]" doc:name="Set False Payload"/>
+            <set-variable variableName="error_msg" value="#['Failed to Authenticate']" doc:name="Error"/>
+        </catch-exception-strategy>
+        </flow>
+    </mule>

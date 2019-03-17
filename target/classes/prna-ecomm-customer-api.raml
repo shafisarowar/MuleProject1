@@ -1,0 +1,23 @@
+#%RAML 0.8
+baseUri: https://mocksvc.mulesoft.com/mocks/22af1815-e691-4323-ac32-e3870b3a05cc
+title: PRNA-Ecomm-Customer
+version: 1.0
+
+/webhooks:
+  description: API endpoint to create customer in CDB
+  post:
+    queryParameters: 
+      channel:
+        description: Channel Name
+        type: string
+        required: true
+      event:
+        description: Event Name
+        type: string
+        required: true
+    responses: 
+      200:
+        description: Event Successful
+        body: 
+          application/json:
+            

@@ -1,0 +1,336 @@
+#%RAML 0.8
+title: EComm Ship Compliant System API
+version: 1.0
+baseUri: http://pr-na-app-coreapi.cloudhub.io/sys
+
+
+/getSalesOrder:
+  get:
+    description: Get sales order
+    queryParameters:
+      key:
+        required: true
+        type: string
+        description: Sales Order Key
+        example: DCO#1189_SANDBOX
+    responses:
+        200:
+          description: Get Sales Order Response
+          body:
+            application/json:
+              example: |
+                {
+                  "GetSalesOrderResponse": {
+                      "GetSalesOrderResult": {
+                          "ComplianceResults": {
+                              "SalesOrder": {
+                                  "IsCompliant": "false",
+                                  "Key": "DCO#1190_SANDBOX",
+                                  "Shipments": {
+                                      "ShipmentComplianceResponse": {
+                                          "IsCompliant": "false",
+                                          "Key": "1",
+                                          "Rules": null
+                                      }
+                                  }
+                              }
+                          },
+                          "ResponseStatus": "Success",
+                          "SalesOrder": {
+                              "BillTo": {
+                                  "City": "New York",
+                                  "Company": null,
+                                  "Country": "US",
+                                  "County": null,
+                                  "DateOfBirth": "1995-01-01T00:00:00",
+                                  "Email": "andre.agapito@pernod-ricard.com",
+                                  "Fax": null,
+                                  "FirstName": "Andre",
+                                  "LastName": "Agapito",
+                                  "Phone": "(347) 324-4118",
+                                  "State": "NY",
+                                  "Street1": "250 Park Ave",
+                                  "Street2": null,
+                                  "Zip1": "10177",
+                                  "Zip2": null
+                              },
+                              "CustomerKey": "953705627763",
+                              "FulfillmentType": "Daily",
+                              "OrderType": "Internet",
+                              "PurchaseDate": "2019-02-15T00:00:00",
+                              "SalesOrderKey": "DCO#1190_SANDBOX",
+                              "SalesTaxCollected": "123",
+                              "Shipments": {
+                                  "Shipment": {
+                                      "FulfillmentHouse": "WineShipping",
+                                      "FulfillmentExceptionReason": null,
+                                      "FulfillmentExceptionType": "None",
+                                      "FulfillmentStatus": "None",
+                                      "GiftNote": null,
+                                      "Handling": "0",
+                                      "InsuredAmount": "0",
+                                      "LicenseRelationship": "SupplierToConsumer",
+                                      "Packages": null,
+                                      "ShipDate": "2017-02-07T00:00:00",
+                                      "ShipmentItems": {
+                                          "ShipmentItem": {
+                                              "BrandKey": "Mumm Napa",
+                                              "ProductKey": "W0179",
+                                              "ProductQuantity": "1",
+                                              "ProductUnitPrice": "14"
+                                          }
+                                      },
+                                      "ShipmentKey": "1",
+                                      "ShipmentStatus": "InProcess",
+                                      "Shipping": "19.5",
+                                      "ShippingService": "UPS",
+                                      "ShipTo": {
+                                          "City": "New York",
+                                          "Company": null,
+                                          "Country": "US",
+                                          "County": "New York",
+                                          "DateOfBirth": "1998-01-01T00:00:00",
+                                          "Email": "andre.agapito@pernod-ricard.com",
+                                          "Fax": null,
+                                          "FirstName": "Andre",
+                                          "LastName": "Agapito",
+                                          "Phone": "(347) 324-4118",
+                                          "State": "NY",
+                                          "Street1": "250 Park Ave",
+                                          "Street2": null,
+                                          "Zip1": "10177",
+                                          "Zip2": "0001"
+                                      },
+                                      "SpecialInstructions": null
+                                  }
+                              },
+                              "Tags": null
+                          }
+                      }
+                  }
+                }   
+        400:
+          description: BAD REQUEST
+          body:
+            application/json: 
+              example: |
+                {"error":"Invalid request or headers."}
+       
+        401:
+          description: UNAUTHORIZED
+          body:
+            application/json: 
+              example: | 
+                {"error": "The user is not authorized to use this API."}    
+        404:
+          description: RESOURCE NOT FOUND
+          body:
+            application/json: 
+              example: |
+                {"error":"The requested resource was not found."}
+        500:
+          description: INTERNAL ERROR
+          body:
+            application/json: 
+              example: |
+                {"error":"Internal Error"} 
+        
+/commitSalesOrder:
+  post:
+    description: Check compliance and commit sales order
+    body:
+      application/json:
+        example: |
+          {
+            "SalesOrder": {
+              "BillTo": {
+                "City": "AK",
+                "Company": "ABV",
+                "Country": "Canada",
+                "County": "XYZ",
+                "DateOfBirth": "dateTime",
+                "Email": "avc@emailclient.com",
+                "Fax": "12345",
+                "FirstName": "ASD",
+                "LastName": "DFG",
+                "Phone": "+1258963",
+                "State": "ON",
+                "Street1": "QWE",
+                "Street2": "XCV",
+                "Zip1": "789",
+                "Zip2": "654"
+              },
+              "CashierKey": "vbn",
+              "CustomerKey": "qwer"
+            }
+          } 
+    responses:
+      200:
+          description: Response Status
+          body:
+              application/json:
+                  example: |
+                      {"status": "Failure or Success"}
+      400:
+          description: BAD REQUEST
+          body:
+              application/json:
+                  example: |
+                     {"error": "Invalid request or headers."}
+      401:
+          description: UNAUTHORIZED
+          body:
+              application/json:
+                  example: |
+                      {"error": "The user is not authorized to use this API."}
+      404:
+          description: NOT FOUND
+          body:
+              application/json:
+                  example: |
+                      {"error": "The requested resource was not found."}         
+      500:
+          description: INTERNAL ERROR
+          body:
+              application/json:
+                  example: |
+                      {"error": "Internal Error"}
+
+/modifyShopifyMetafield:
+  post:
+    description: Modify Shopify Metafield
+    queryParameters:
+      channel:
+        required: true
+        type: string
+        description: channel ID
+        example: SHOPIFY_DRINKSCO_US
+    body:
+      application/json:
+        example: |
+          {   
+            "namespace": "customer",
+            "resource_type": "customers",
+            "resource_id": "1220869259379",
+            "field_name": "birthdate",
+            "type": "string",
+            "value": "25-02-1985"
+          }
+    responses:
+      200:
+          description: Shopify Metafield Setting Status
+          body:
+              application/json:
+                  example: |
+                      {"status": "True or False"}
+      400:
+          description: BAD REQUEST
+          body:
+              application/json:
+                  example: |
+                     {"error": "Invalid request or headers."}
+      401:
+          description: UNAUTHORIZED
+          body:
+              application/json:
+                  example: |
+                      {"error": "The user is not authorized to use this API."}
+      404:
+          description: NOT FOUND
+          body:
+              application/json:
+                  example: |
+                      {"error": "The requested resource was not found."}         
+      500:
+          description: INTERNAL ERROR
+          body:
+              application/json:
+                  example: |
+                      {"error": "Internal Error"}
+            
+/checkComplianceOfSalesOrder:
+  post:
+    description: Check compliance of sales order
+    body:
+      application/json:
+        example: |
+          {
+            "shopify_hostname": "drinksandco-prusa-sandbox.myshopify.com",
+            "PurchaseDate": "2019-02-25",
+            "CustomerKey": "1220869259379",
+            "SalesOrderKey": "0f2a1723d998e8a6838174a13af8d60a",
+            "SalesTaxCollected": 0,
+            "BillTo": {
+               "FirstName": "Incepta",
+               "LastName": "Incepta",
+               "Street1": "5045 Orbitor Drive",
+               "Street2": "5045 Orbitor Drive",
+               "City": "pennsylvania",
+               "State": "PA",
+               "Zip1": "15089",
+               "Country": "United States",
+               "Phone": "1 234-826-5514",
+               "Email": "asd@gmail.com",
+               "DateOfBirth": "1985-01-01"
+            },
+            "Shipments": [
+               {
+                  "ShipDate": "2019-02-25",
+                  "InsuredAmount": 0,
+                  "ShippingService": "Standard Shipping",
+                  "ShipTo": {
+                     "FirstName": "Incepta",
+                     "LastName": "Incepta",
+                     "Street1": "5045 Orbitor Drive",
+                     "Street2": "",
+                     "City": "pennsylvania",
+                     "State": "PA",
+                     "Zip1": "15089",
+                     "Country": "United States",
+                     "Phone": "1 416-826-5514",
+                     "Email": "asd@gmail.com",
+                     "DateOfBirth": "1985-01-01"
+                  },
+                  "LineItems": [
+                     {
+                        "ProductKey": "W0209",
+                        "Quantity": 1,
+                        "UnitPrice": "14.00"
+                     }
+                  ]
+               }
+            ]
+          }
+    responses:
+      200:
+          description: Check compliance of sales order response
+          body:
+              application/json:
+                  example: |
+                     {"compliant":false,"reasons":["AgeVerificationRequired"]}
+      400:
+          description: BAD REQUEST
+          body:
+              application/json:
+                  example: |
+                     {"error": "Invalid request or headers."}
+      401:
+          description: UNAUTHORIZED
+          body:
+              application/json:
+                  example: |
+                      {"error": "The user is not authorized to use this API."}
+      404:
+          description: NOT FOUND
+          body:
+              application/json:
+                  example: |
+                      {"error": "The requested resource was not found."}         
+      500:
+          description: INTERNAL ERROR
+          body:
+              application/json:
+                  example: |
+                      {"error": "Internal Error"}
+       
+ 

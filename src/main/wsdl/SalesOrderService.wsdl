@@ -1,0 +1,2518 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<wsdl:definitions
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" targetNamespace="http://ws.shipcompliant.com/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:tns="http://ws.shipcompliant.com/"
+    xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+    xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+    xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+    xmlns:s="http://www.w3.org/2001/XMLSchema">
+    <wsdl:types>
+        <s:schema targetNamespace="http://ws.shipcompliant.com/" elementFormDefault="qualified">
+            <s:element name="AddExternalClubKeys">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:AddExternalClubKeysRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddExternalClubKeysRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ExternalClubKey" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:complexType name="BaseRequest" abstract="true">
+                <s:sequence>
+                    <s:element name="Security" type="tns:Security" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Security">
+                <s:sequence>
+                    <s:element name="InstanceID" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PartnerKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Password" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Username" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfString">
+                <s:sequence>
+                    <s:element name="string" type="s:string" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddExternalClubKeysResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="AddExternalClubKeysResult" type="tns:AddExternalClubKeysResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddExternalClubKeysResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfError">
+                <s:sequence>
+                    <s:element name="Error" type="tns:Error" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Error">
+                <s:sequence>
+                    <s:element name="Code" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Data" type="tns:ErrorData" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Key" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Message" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Target" type="tns:ErrorTarget" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Type" type="tns:ErrorType" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ErrorData">
+                <s:sequence>
+                    <s:element name="AddressSuggestion" type="tns:AddressSuggestion" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="AddressSuggestion">
+                <s:sequence>
+                    <s:element name="City" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="County" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Details" type="tns:AddressDetails" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Parts" type="tns:AddressParts" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="State" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Street1" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Street2" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Zip1" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Zip2" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="AddressDetails">
+                <s:sequence>
+                    <s:element name="CityAbbreviation" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="CongressionalDistrict" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="CountyFips" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="TimeZone" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="TimeZoneCode" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="AddressParts">
+                <s:sequence>
+                    <s:element name="Company" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="MailBoxName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="MailBoxNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PostDirection" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PreDirection" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="StreetName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="StreetNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="StreetSuffix" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SuiteName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SuiteNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="ErrorTarget">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Address"/>
+                    <s:enumeration value="Age"/>
+                    <s:enumeration value="Batch"/>
+                    <s:enumeration value="Brand"/>
+                    <s:enumeration value="Distributor"/>
+                    <s:enumeration value="Product"/>
+                    <s:enumeration value="SalesOrder"/>
+                    <s:enumeration value="Shipment"/>
+                    <s:enumeration value="Tax"/>
+                    <s:enumeration value="SSO"/>
+                    <s:enumeration value="License"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="ErrorType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Authentication"/>
+                    <s:enumeration value="Server"/>
+                    <s:enumeration value="Validation"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="ResponseStatus">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Failure"/>
+                    <s:enumeration value="Success"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:element name="AddExternalOfferKeys">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:AddExternalOfferKeysRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddExternalOfferKeysRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ExternalOfferKey" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="AddExternalOfferKeysResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="AddExternalOfferKeysResult" type="tns:AddExternalOfferKeysResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddExternalOfferKeysResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddTrackingNumber">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:AddTrackingNumberRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddTrackingNumberRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="TrackingNumbers" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="AddTrackingNumberResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="AddTrackingNumberResult" type="tns:AddTrackingNumberResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddTrackingNumberResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="CheckComplianceOfSalesOrder">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:CheckComplianceOfSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CheckComplianceOfSalesOrderRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="AddressOption" type="tns:AddressOption" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="IncludeSalesTaxRates" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="PersistOption" type="tns:PersistOption" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="SalesOrder" type="tns:SalesOrder" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:complexType name="AddressOption">
+                <s:sequence>
+                    <s:element name="IgnoreStreetLevelErrors" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="RejectIfAddressSuggested" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="PersistOption">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="OverrideExisting"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="SalesOrder">
+                <s:sequence>
+                    <s:element name="BillTo" type="tns:Address" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="CashierKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="CustomerKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Discounts" type="tns:ArrayOfSalesOrderDiscount" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ExternalCustomerKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ExternalOfferKeys" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ExternalSalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentType" type="tns:FulfillmentType" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="OrderType" type="tns:OrderType" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Payments" type="tns:ArrayOfPayment" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PurchaseDate" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ReferenceNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="RefundedOrderReference" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="RegisterID" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SalesAssociateKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SalesTaxCollected" type="s:decimal" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SettlementBatchNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Shipments" type="tns:ArrayOfShipment" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Tags" type="tns:ArrayOfTag" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Address">
+                <s:sequence>
+                    <s:element name="City" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Company" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Country" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="County" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="DateOfBirth" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Email" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Fax" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FirstName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="LastName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Phone" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="State" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Street1" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Street2" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Zip1" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Zip2" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfSalesOrderDiscount">
+                <s:sequence>
+                    <s:element name="SalesOrderDiscount" type="tns:SalesOrderDiscount" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="SalesOrderDiscount">
+                <s:attribute name="Amount" type="s:decimal" use="required"/>
+                <s:attribute name="Code" type="s:string"/>
+                <s:attribute name="Type" type="s:string"/>
+            </s:complexType>
+            <s:simpleType name="FulfillmentType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Club"/>
+                    <s:enumeration value="Daily"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="OrderType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Club"/>
+                    <s:enumeration value="Fax"/>
+                    <s:enumeration value="InPerson"/>
+                    <s:enumeration value="Internet"/>
+                    <s:enumeration value="Mail"/>
+                    <s:enumeration value="Phone"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="ArrayOfPayment">
+                <s:sequence>
+                    <s:element name="Payment" type="tns:Payment" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Payment">
+                <s:sequence>
+                    <s:element name="Amount" type="s:decimal" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SubType" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="TransactionID" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Type" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipment">
+                <s:sequence>
+                    <s:element name="Shipment" type="tns:Shipment" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Shipment">
+                <s:sequence>
+                    <s:element name="Discounts" type="tns:ArrayOfShipmentDiscount" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ExternalClubKeys" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentAccount" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentHouse" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentExceptionReason" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentExceptionType" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentStatus" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="GiftNote" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Handling" type="s:double" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="InsuredAmount" type="s:double" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="LicenseRelationship" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Packages" type="tns:ArrayOfPackage" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ShipDate" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ShipmentItems" type="tns:ArrayOfShipmentItem" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ShipmentStatus" type="tns:ShipmentStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Shipping" type="s:double" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="ShippingService" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ShipTo" type="tns:Address" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SpecialInstructions" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentDiscount">
+                <s:sequence>
+                    <s:element name="ShipmentDiscount" type="tns:ShipmentDiscount" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentDiscount">
+                <s:attribute name="Amount" type="s:decimal" use="required"/>
+                <s:attribute name="Code" type="s:string"/>
+                <s:attribute name="Type" type="s:string"/>
+            </s:complexType>
+            <s:complexType name="ArrayOfPackage">
+                <s:sequence>
+                    <s:element name="Package" type="tns:Package" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Package">
+                <s:sequence>
+                    <s:element name="TrackingNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="TrackingStatus" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentItem">
+                <s:sequence>
+                    <s:element name="ShipmentItem" type="tns:ShipmentItem" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentItem">
+                <s:sequence>
+                    <s:element name="BrandKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Discounts" type="tns:ArrayOfShipmentItemDiscount" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ProductKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ProductQuantity" type="s:double" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ProductUnitPrice" type="s:double" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="CITB" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentItemDiscount">
+                <s:sequence>
+                    <s:element name="ShipmentItemDiscount" type="tns:ShipmentItemDiscount" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentItemDiscount">
+                <s:attribute name="Amount" type="s:decimal" use="required"/>
+                <s:attribute name="Code" type="s:string"/>
+                <s:attribute name="Type" type="s:string"/>
+            </s:complexType>
+            <s:complexType name="ShipmentItemWithTaxDetails">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:ShipmentItem">
+                        <s:sequence>
+                            <s:element name="TaxDetails" type="tns:ShipmentItemTaxDetails" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:complexType name="ShipmentItemTaxDetails">
+                <s:sequence>
+                    <s:element name="SalesTaxRate" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="StateSalesTaxRate" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="CountySalesTaxRate" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="LocalSalesTaxRate" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="ExciseTaxDue" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="ExciseTaxRate" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="ExciseTaxRatePerUnit" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="ShipmentStatus">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Delivered"/>
+                    <s:enumeration value="InProcess"/>
+                    <s:enumeration value="Shipped"/>
+                    <s:enumeration value="PaymentAccepted"/>
+                    <s:enumeration value="SentToFulfillment"/>
+                    <s:enumeration value="Voided"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="ShipmentWithTaxDetails">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:Shipment">
+                        <s:sequence>
+                            <s:element name="ShipmentTaxDetails" type="tns:ShipmentTaxDetails" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:complexType name="ShipmentTaxDetails">
+                <s:sequence>
+                    <s:element name="SalesTaxAmountCollected" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="SalesTaxAmountDue" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="SalesTaxDifference" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="SalesTaxDueState" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="SalesTaxDueCounty" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="SalesTaxDueLocal" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="ExciseTaxDue" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                    <s:element name="TaxJurisdiction" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfTag">
+                <s:sequence>
+                    <s:element name="Tag" type="tns:Tag" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="Tag">
+                <s:sequence>
+                    <s:element name="Name" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="CheckComplianceOfSalesOrderResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="CheckComplianceOfSalesOrderResult" type="tns:CheckComplianceOfSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CheckComplianceOfSalesOrderResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrder" type="tns:SalesOrderComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="SalesOrderComplianceResponse">
+                <s:sequence>
+                    <s:element name="IsCompliant" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Key" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SalesTaxRates" type="tns:SalesTaxRates" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Shipments" type="tns:ArrayOfShipmentComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="SalesTaxRates">
+                <s:sequence>
+                    <s:element name="RecommendedSalesTaxDue" type="s:decimal" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ShipmentSalesTaxRates" type="tns:ArrayOfShipmentSalesTaxRate" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentSalesTaxRate">
+                <s:sequence>
+                    <s:element name="ShipmentSalesTaxRate" type="tns:ShipmentSalesTaxRate" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentSalesTaxRate">
+                <s:sequence>
+                    <s:element name="FreightSalesTaxRate" type="tns:FreightSalesTaxRate" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ProductSalesTaxRates" type="tns:ArrayOfProductSalesTaxRate" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+                <s:attribute name="ShipmentKey" type="s:string"/>
+            </s:complexType>
+            <s:complexType name="FreightSalesTaxRate">
+                <s:attribute name="SalesTaxDue" type="s:decimal" use="required"/>
+                <s:attribute name="SalesTaxRate" type="s:decimal" use="required"/>
+            </s:complexType>
+            <s:complexType name="ArrayOfProductSalesTaxRate">
+                <s:sequence>
+                    <s:element name="ProductSalesTaxRate" type="tns:ProductSalesTaxRate" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ProductSalesTaxRate">
+                <s:attribute name="BrandKey" type="s:string"/>
+                <s:attribute name="ProductKey" type="s:string"/>
+                <s:attribute name="SalesTaxDue" type="s:decimal" use="required"/>
+                <s:attribute name="SalesTaxRate" type="s:decimal" use="required"/>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentComplianceResponse">
+                <s:sequence>
+                    <s:element name="ShipmentComplianceResponse" type="tns:ShipmentComplianceResponse" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentComplianceResponse">
+                <s:sequence>
+                    <s:element name="IsCompliant" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Key" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Rules" type="tns:ArrayOfRuleComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfRuleComplianceResponse">
+                <s:sequence>
+                    <s:element name="RuleComplianceResponse" type="tns:RuleComplianceResponse" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="RuleComplianceResponse">
+                <s:sequence>
+                    <s:element name="ComplianceDescription" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ComplianceDetails" type="tns:ArrayOfComplianceDetailResponse" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="IsCompliant" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="LicenseRelationship" type="tns:LicenseRelationship" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="RuleDescription" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="RuleType" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Supplier" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="CustomerAggregateVolumeLimitDetail" type="tns:CustomerAggregateVolumeLimitDetail" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PerShipmentVolumeLimitDetail" type="tns:PerShipmentVolumeLimitDetail" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PerBottleVolumeLimitDetail" type="tns:PerBottleVolumeLimitDetail" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfComplianceDetailResponse">
+                <s:sequence>
+                    <s:element name="ComplianceDetailResponse" type="tns:ComplianceDetailResponse" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ComplianceDetailResponse">
+                <s:sequence>
+                    <s:element name="Type" type="tns:ComplianceDetailType" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Value" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="ComplianceDetailType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="BrandNameNotRegistered"/>
+                    <s:enumeration value="LabelNotRegistered"/>
+                    <s:enumeration value="NextShipDate"/>
+                    <s:enumeration value="VolumeOverLimit"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="LicenseRelationship">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Default"/>
+                    <s:enumeration value="Pickup"/>
+                    <s:enumeration value="RetailerToConsumer"/>
+                    <s:enumeration value="RetailerToThreeTier"/>
+                    <s:enumeration value="SupplierToConsumer"/>
+                    <s:enumeration value="SupplierToDistributor"/>
+                    <s:enumeration value="SupplierToThreeTier"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="CustomerAggregateVolumeLimitDetail">
+                <s:sequence>
+                    <s:element name="CustomerType" type="tns:CustomerType" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="TimeFrameCount" type="s:int" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="TimeFrameType" type="tns:TimeFrameType" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="TimeFrameUnit" type="tns:TimeFrameUnit" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="UnitOfMeasure" type="tns:VolumeUnit" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="VolumeCount" type="s:int" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="CustomerType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Household"/>
+                    <s:enumeration value="Individual"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="TimeFrameType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Calendar"/>
+                    <s:enumeration value="Rolling"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="TimeFrameUnit">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Minutes"/>
+                    <s:enumeration value="Hours"/>
+                    <s:enumeration value="Days"/>
+                    <s:enumeration value="Weeks"/>
+                    <s:enumeration value="Months"/>
+                    <s:enumeration value="Years"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="VolumeUnit">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Bottle"/>
+                    <s:enumeration value="Case"/>
+                    <s:enumeration value="Gallon"/>
+                    <s:enumeration value="Liter"/>
+                    <s:enumeration value="Milliliter"/>
+                    <s:enumeration value="Ounce"/>
+                    <s:enumeration value="Quart"/>
+                    <s:enumeration value="Barrel"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="PerShipmentVolumeLimitDetail">
+                <s:sequence>
+                    <s:element name="VolumeCount" type="s:int" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="VolumeUnit" type="tns:VolumeUnit" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="PerBottleVolumeLimitDetail">
+                <s:sequence>
+                    <s:element name="VolumeCount" type="s:int" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="VolumeUnit" type="tns:VolumeUnit" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="CheckComplianceOfSalesOrderWithAddressValidation">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:CheckComplianceOfSalesOrderWithAddressValidationRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CheckComplianceOfSalesOrderWithAddressValidationRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:CheckComplianceOfSalesOrderRequest">
+                        <s:sequence>
+                            <s:element name="Option" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="CheckComplianceOfSalesOrderWithAddressValidationResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="CheckComplianceOfSalesOrderWithAddressValidationResult" type="tns:CheckComplianceOfSalesOrderWithAddressValidationResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CheckComplianceOfSalesOrderWithAddressValidationResponse">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:CheckComplianceOfSalesOrderResponse">
+                        <s:sequence>
+                            <s:element name="AddressValidationResult" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SuggestedAddress" type="tns:AddressSuggestion" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="CheckComplianceOfAndCommitSalesOrder">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:CheckComplianceOfAndCommitSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CheckComplianceOfAndCommitSalesOrderRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="AddressOption" type="tns:AddressOption" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="CommitOption" type="tns:CommitOption" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="IncludeSalesTaxRates" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="PersistOption" type="tns:PersistOption" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="SalesOrder" type="tns:SalesOrder" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:simpleType name="CommitOption">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="AllShipments"/>
+                    <s:enumeration value="CompliantShipments"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:element name="CheckComplianceOfAndCommitSalesOrderResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="CheckComplianceOfAndCommitSalesOrderResult" type="tns:CheckComplianceOfAndCommitSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CheckComplianceOfAndCommitSalesOrderResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrder" type="tns:SalesOrderComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="ClearFulfillmentException">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:ClearFulfillmentExceptionRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="ClearFulfillmentExceptionRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ClearFulfillmentExceptionType" type="tns:ClearFulfillmentExceptionType" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:simpleType name="ClearFulfillmentExceptionType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Accept"/>
+                    <s:enumeration value="Retry"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:element name="ClearFulfillmentExceptionResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="ClearFulfillmentExceptionResult" type="tns:ClearFulfillmentExceptionResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="ClearFulfillmentExceptionResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="CommitSalesOrder">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:CommitSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CommitSalesOrderRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="CommitOption" type="tns:CommitOption" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="ExternalSalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="Payments" type="tns:ArrayOfPayment" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesTaxCollected" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="CommitSalesOrderResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="CommitSalesOrderResult" type="tns:CommitSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CommitSalesOrderResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Shipments" type="tns:ArrayOfShipmentCommitResponse" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentCommitResponse">
+                <s:sequence>
+                    <s:element name="ShipmentCommitResponse" type="tns:ShipmentCommitResponse" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentCommitResponse">
+                <s:sequence>
+                    <s:element name="Key" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="IsCommitted" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="CommitSalesOrderUpdateKey">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:CommitSalesOrderUpdateKeyRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="CommitSalesOrderUpdateKeyRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="CommitOption" type="tns:CommitOption" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="ExternalSalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="OldSalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="Payments" type="tns:ArrayOfPayment" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesTaxCollected" type="s:decimal" maxOccurs="1" minOccurs="1" nillable="true"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="CommitSalesOrderUpdateKeyResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="CommitSalesOrderUpdateKeyResult" type="tns:CommitSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetPossibleFulfillmentHouses">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetPossibleFulfillmentHousesRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetPossibleFulfillmentHousesRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ReturnOnlyActiveForSupplier" type="s:boolean" maxOccurs="1" minOccurs="1"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="GetPossibleFulfillmentHousesResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetPossibleFulfillmentHousesResult" type="tns:GetPossibleFulfillmentHousesResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetPossibleFulfillmentHousesResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PossibleValues" type="tns:ArrayOfPossibleValue" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfPossibleValue">
+                <s:sequence>
+                    <s:element name="PossibleValue" type="tns:PossibleValue" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="PossibleValue">
+                <s:attribute name="Value" type="s:string"/>
+                <s:attribute name="Description" type="s:string"/>
+            </s:complexType>
+            <s:element name="GetPossibleRuleTypes">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetPossibleRuleTypesRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetPossibleRuleTypesRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest"/>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="GetPossibleRuleTypesResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetPossibleRuleTypesResult" type="tns:GetPossibleRuleTypesResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetPossibleRuleTypesResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PossibleValues" type="tns:ArrayOfPossibleValue" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetPossibleShippingServices">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetPossibleShippingServicesRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetPossibleShippingServicesRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest"/>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="GetPossibleShippingServicesResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetPossibleShippingServicesResult" type="tns:GetPossibleShippingServicesResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetPossibleShippingServicesResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PossibleValues" type="tns:ArrayOfPossibleValue" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSalesOrder">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetSalesOrderRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="GetSalesOrderResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetSalesOrderResult" type="tns:GetSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetSalesOrderResponse">
+                <s:sequence>
+                    <s:element name="ComplianceResults" type="tns:ComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrder" type="tns:SalesOrder" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ComplianceResponse">
+                <s:sequence>
+                    <s:element name="SalesOrder" type="tns:SalesOrderComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSalesOrderExtended">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetSalesOrderExtendedResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetSalesOrderExtendedResult" type="tns:GetSalesOrderExtendedResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetSalesOrderExtendedResponse">
+                <s:sequence>
+                    <s:element name="ComplianceResults" type="tns:ComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrder" type="tns:SalesOrder" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="OrderChannelDetails" type="tns:OrderChannelDetails" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="OrderChannelDetails">
+                <s:sequence>
+                    <s:element name="OrderChannel" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="AdvertiserKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="AdvertiserName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Meta" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSalesOrderWithTaxDetails">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetSalesOrderWithTaxDetailsResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetSalesOrderWithTaxDetailsResult" type="tns:GetSalesOrderWithTaxDetailsResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetSalesOrderWithTaxDetailsResponse">
+                <s:sequence>
+                    <s:element name="ComplianceResults" type="tns:ComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrder" type="tns:SalesOrder" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="OrderChannelDetails" type="tns:OrderChannelDetails" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSalesOrderStatus">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:GetSalesOrderStatusRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetSalesOrderStatusRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="GetSalesOrderStatusResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetSalesOrderStatusResult" type="tns:GetSalesOrderStatusResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="GetSalesOrderStatusResponse">
+                <s:sequence>
+                    <s:element name="ComplianceResults" type="tns:ComplianceResponse" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetVersion">
+                <s:complexType/>
+            </s:element>
+            <s:element name="GetVersionResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="GetVersionResult" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="PersistSalesOrder">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:PersistSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="PersistSalesOrderRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="AddressOption" type="tns:AddressOption" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="PersistOption" type="tns:PersistOption" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="SalesOrder" type="tns:SalesOrder" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="PersistSalesOrderResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="PersistSalesOrderResult" type="tns:PersistSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="PersistSalesOrderResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="RemoveTrackingNumberFromShipment">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:RemoveTrackingNumberFromShipmentRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="RemoveTrackingNumberFromShipmentRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="TrackingNumbers" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="RemoveTrackingNumberFromShipmentResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="RemoveTrackingNumberFromShipmentResult" type="tns:RemoveTrackingNumberFromShipmentResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="RemoveTrackingNumberFromShipmentResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="SearchMoreSalesOrders">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SearchMoreSalesOrdersRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SearchMoreSalesOrdersRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="PagingCookie" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="SearchMoreSalesOrdersResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SearchMoreSalesOrdersResult" type="tns:SearchSalesOrdersResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SearchSalesOrdersResponse">
+                <s:sequence>
+                    <s:element name="CountMoreSalesOrdersAvailable" type="s:int" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="CountSalesOrdersReturned" type="s:int" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PagingCookie" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PagingCookieExpires" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrders" type="tns:ArrayOfSalesOrderSummary" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfSalesOrderSummary">
+                <s:sequence>
+                    <s:element name="SalesOrderSummary" type="tns:SalesOrderSummary" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="SalesOrderSummary">
+                <s:sequence>
+                    <s:element name="ExternalCustomerKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ExternalOfferKeys" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ExternalSalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="PurchaseDate" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="SettlementBatchNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Shipments" type="tns:ArrayOfShipmentSummary" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Tags" type="tns:ArrayOfTagSummary" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfShipmentSummary">
+                <s:sequence>
+                    <s:element name="ShipmentSummary" type="tns:ShipmentSummary" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ShipmentSummary">
+                <s:sequence>
+                    <s:element name="ComplianceStatus" type="tns:ShipmentComplianceStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ExternalClubKeys" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentAccount" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentExceptionReason" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentExceptionType" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentHouse" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="FulfillmentStatus" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Packages" type="tns:ArrayOfPackageSummary" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="RequestedShipDate" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ShipDate" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ShipmentStatus" type="tns:ShipmentStatus" maxOccurs="1" minOccurs="1"/>
+                    <s:element name="ShipTo" type="tns:AddressSummary" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="ShipmentComplianceStatus">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="CompliantCommitted"/>
+                    <s:enumeration value="LegacyCommitted"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="ArrayOfPackageSummary">
+                <s:sequence>
+                    <s:element name="PackageSummary" type="tns:PackageSummary" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="PackageSummary">
+                <s:sequence>
+                    <s:element name="Carrier" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="TrackingNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="TrackingStatus" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="AddressSummary">
+                <s:sequence>
+                    <s:element name="FirstName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="LastName" type="s:string" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="Zip1" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfTagSummary">
+                <s:sequence>
+                    <s:element name="TagSummary" type="tns:TagSummary" maxOccurs="unbounded" minOccurs="0" nillable="true"/>
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="TagSummary">
+                <s:sequence>
+                    <s:element name="Name" type="s:string" maxOccurs="1" minOccurs="0"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="SearchSalesOrders">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SearchSalesOrdersRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SearchSalesOrdersRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ComplianceStatus" type="tns:ShipmentComplianceStatus" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="ExternalClubKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ExternalOfferKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ExternalSalesOrderKeyMax" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ExternalSalesOrderKeyMin" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ExternalSalesOrderKeys" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="FulfillmentAccount" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="FulfillmentExceptionType" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="FulfillmentHouse" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="FulfillmentStatus" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="LicenseRelationship" type="tns:LicenseRelationship" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="Partner" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="PurchaseDateMax" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="PurchaseDateMin" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="RequestedShipDateMax" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="RequestedShipDateMin" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="SalesOrderKeyMax" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKeyMin" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKeys" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SaleType" type="tns:SaleType" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="SettlementBatchNumber" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipDateMax" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="ShipDateMin" type="s:dateTime" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="ShipmentStatus" type="tns:ShipmentStatus" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="ShipToState" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="Tag" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="TrackingExistence" type="tns:TrackingExistence" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="NotTag" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="Channel" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:simpleType name="SaleType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Both"/>
+                    <s:enumeration value="Offsite"/>
+                    <s:enumeration value="Onsite"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:simpleType name="TrackingExistence">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="HasTrackingNumbers"/>
+                    <s:enumeration value="ZeroTrackingNumbers"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:element name="SearchSalesOrdersResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SearchSalesOrdersResult" type="tns:SearchSalesOrdersResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="SetExternalClubKeys">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SetExternalClubKeysRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalClubKeysRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ExternalClubKey" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="SetExternalClubKeysResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SetExternalClubKeysResult" type="tns:SetExternalClubKeysResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalClubKeysResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="SetExternalCustomerKey">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SetExternalCustomerKeyRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalCustomerKeyRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ExternalCustomerKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="SetExternalCustomerKeyResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SetExternalCustomerKeyResult" type="tns:SetExternalCustomerKeyResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalCustomerKeyResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="SetExternalOfferKeys">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SetExternalOfferKeysRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalOfferKeysRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ExternalOfferKey" type="tns:ArrayOfString" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="SetExternalOfferKeysResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SetExternalOfferKeysResult" type="tns:SetExternalOfferKeysResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalOfferKeysResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="SetExternalSalesOrderKey">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SetExternalSalesOrderKeyRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalSalesOrderKeyRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="ExternalSalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="SetExternalSalesOrderKeyResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SetExternalSalesOrderKeyResult" type="tns:SetExternalSalesOrderKeyResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetExternalSalesOrderKeyResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="SetFulfillmentException">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:SetFulfillmentExceptionRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetFulfillmentExceptionRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="FulfillmentExceptionType" type="tns:FulfillmentExceptionType" maxOccurs="1" minOccurs="1"/>
+                            <s:element name="Reason" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:simpleType name="FulfillmentExceptionType">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Null"/>
+                    <s:enumeration value="Inventory"/>
+                    <s:enumeration value="Other"/>
+                    <s:enumeration value="Setup"/>
+                    <s:enumeration value="Temperature"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:element name="SetFulfillmentExceptionResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="SetFulfillmentExceptionResult" type="tns:SetFulfillmentExceptionResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="SetFulfillmentExceptionResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="UpdateShipmentStatus">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:UpdateShipmentStatusRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="UpdateShipmentStatusRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentStatus" type="tns:ShipmentStatus" maxOccurs="1" minOccurs="1"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="UpdateShipmentStatusResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="UpdateShipmentStatusResult" type="tns:UpdateShipmentStatusResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="UpdateShipmentStatusResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="VoidSalesOrder">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:VoidSalesOrderRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="VoidSalesOrderRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="VoidSalesOrderResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="VoidSalesOrderResult" type="tns:VoidSalesOrderResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="VoidSalesOrderResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddOrRemoveTag">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:AddOrRemoveTagRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddOrRemoveTagRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="Tag" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="Mode" type="tns:AddOrRemove" maxOccurs="1" minOccurs="1"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:simpleType name="AddOrRemove">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Add"/>
+                    <s:enumeration value="Remove"/>
+                </s:restriction>
+            </s:simpleType>
+            <s:element name="AddOrRemoveTagResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="AddOrRemoveTagResult" type="tns:AddOrRemoveTagResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddOrRemoveTagResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddUpdatePickupLocation">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="Request" type="tns:AddUpdatePickupLocationRequest" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddUpdatePickupLocationRequest">
+                <s:complexContent mixed="false">
+                    <s:extension base="tns:BaseRequest">
+                        <s:sequence>
+                            <s:element name="SalesOrderKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="ShipmentKey" type="s:string" maxOccurs="1" minOccurs="0"/>
+                            <s:element name="Address" type="tns:Address" maxOccurs="1" minOccurs="0"/>
+                        </s:sequence>
+                    </s:extension>
+                </s:complexContent>
+            </s:complexType>
+            <s:element name="AddUpdatePickupLocationResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element name="AddUpdatePickupLocationResult" type="tns:AddUpdatePickupLocationResponse" maxOccurs="1" minOccurs="0"/>
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="AddUpdatePickupLocationResponse">
+                <s:sequence>
+                    <s:element name="Errors" type="tns:ArrayOfError" maxOccurs="1" minOccurs="0"/>
+                    <s:element name="ResponseStatus" type="tns:ResponseStatus" maxOccurs="1" minOccurs="1"/>
+                </s:sequence>
+            </s:complexType>
+        </s:schema>
+    </wsdl:types>
+    <wsdl:message name="AddExternalClubKeysSoapIn">
+        <wsdl:part name="parameters" element="tns:AddExternalClubKeys"/>
+    </wsdl:message>
+    <wsdl:message name="AddExternalClubKeysSoapOut">
+        <wsdl:part name="parameters" element="tns:AddExternalClubKeysResponse"/>
+    </wsdl:message>
+    <wsdl:message name="AddExternalOfferKeysSoapIn">
+        <wsdl:part name="parameters" element="tns:AddExternalOfferKeys"/>
+    </wsdl:message>
+    <wsdl:message name="AddExternalOfferKeysSoapOut">
+        <wsdl:part name="parameters" element="tns:AddExternalOfferKeysResponse"/>
+    </wsdl:message>
+    <wsdl:message name="AddTrackingNumberSoapIn">
+        <wsdl:part name="parameters" element="tns:AddTrackingNumber"/>
+    </wsdl:message>
+    <wsdl:message name="AddTrackingNumberSoapOut">
+        <wsdl:part name="parameters" element="tns:AddTrackingNumberResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CheckComplianceOfSalesOrderSoapIn">
+        <wsdl:part name="parameters" element="tns:CheckComplianceOfSalesOrder"/>
+    </wsdl:message>
+    <wsdl:message name="CheckComplianceOfSalesOrderSoapOut">
+        <wsdl:part name="parameters" element="tns:CheckComplianceOfSalesOrderResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CheckComplianceOfSalesOrderWithAddressValidationSoapIn">
+        <wsdl:part name="parameters" element="tns:CheckComplianceOfSalesOrderWithAddressValidation"/>
+    </wsdl:message>
+    <wsdl:message name="CheckComplianceOfSalesOrderWithAddressValidationSoapOut">
+        <wsdl:part name="parameters" element="tns:CheckComplianceOfSalesOrderWithAddressValidationResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CheckComplianceOfAndCommitSalesOrderSoapIn">
+        <wsdl:part name="parameters" element="tns:CheckComplianceOfAndCommitSalesOrder"/>
+    </wsdl:message>
+    <wsdl:message name="CheckComplianceOfAndCommitSalesOrderSoapOut">
+        <wsdl:part name="parameters" element="tns:CheckComplianceOfAndCommitSalesOrderResponse"/>
+    </wsdl:message>
+    <wsdl:message name="ClearFulfillmentExceptionSoapIn">
+        <wsdl:part name="parameters" element="tns:ClearFulfillmentException"/>
+    </wsdl:message>
+    <wsdl:message name="ClearFulfillmentExceptionSoapOut">
+        <wsdl:part name="parameters" element="tns:ClearFulfillmentExceptionResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CommitSalesOrderSoapIn">
+        <wsdl:part name="parameters" element="tns:CommitSalesOrder"/>
+    </wsdl:message>
+    <wsdl:message name="CommitSalesOrderSoapOut">
+        <wsdl:part name="parameters" element="tns:CommitSalesOrderResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CommitSalesOrderUpdateKeySoapIn">
+        <wsdl:part name="parameters" element="tns:CommitSalesOrderUpdateKey"/>
+    </wsdl:message>
+    <wsdl:message name="CommitSalesOrderUpdateKeySoapOut">
+        <wsdl:part name="parameters" element="tns:CommitSalesOrderUpdateKeyResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetPossibleFulfillmentHousesSoapIn">
+        <wsdl:part name="parameters" element="tns:GetPossibleFulfillmentHouses"/>
+    </wsdl:message>
+    <wsdl:message name="GetPossibleFulfillmentHousesSoapOut">
+        <wsdl:part name="parameters" element="tns:GetPossibleFulfillmentHousesResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetPossibleRuleTypesSoapIn">
+        <wsdl:part name="parameters" element="tns:GetPossibleRuleTypes"/>
+    </wsdl:message>
+    <wsdl:message name="GetPossibleRuleTypesSoapOut">
+        <wsdl:part name="parameters" element="tns:GetPossibleRuleTypesResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetPossibleShippingServicesSoapIn">
+        <wsdl:part name="parameters" element="tns:GetPossibleShippingServices"/>
+    </wsdl:message>
+    <wsdl:message name="GetPossibleShippingServicesSoapOut">
+        <wsdl:part name="parameters" element="tns:GetPossibleShippingServicesResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderSoapIn">
+        <wsdl:part name="parameters" element="tns:GetSalesOrder"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderSoapOut">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderExtendedSoapIn">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderExtended"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderExtendedSoapOut">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderExtendedResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderWithTaxDetailsSoapIn">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderWithTaxDetails"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderWithTaxDetailsSoapOut">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderWithTaxDetailsResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderStatusSoapIn">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderStatus"/>
+    </wsdl:message>
+    <wsdl:message name="GetSalesOrderStatusSoapOut">
+        <wsdl:part name="parameters" element="tns:GetSalesOrderStatusResponse"/>
+    </wsdl:message>
+    <wsdl:message name="GetVersionSoapIn">
+        <wsdl:part name="parameters" element="tns:GetVersion"/>
+    </wsdl:message>
+    <wsdl:message name="GetVersionSoapOut">
+        <wsdl:part name="parameters" element="tns:GetVersionResponse"/>
+    </wsdl:message>
+    <wsdl:message name="PersistSalesOrderSoapIn">
+        <wsdl:part name="parameters" element="tns:PersistSalesOrder"/>
+    </wsdl:message>
+    <wsdl:message name="PersistSalesOrderSoapOut">
+        <wsdl:part name="parameters" element="tns:PersistSalesOrderResponse"/>
+    </wsdl:message>
+    <wsdl:message name="RemoveTrackingNumberFromShipmentSoapIn">
+        <wsdl:part name="parameters" element="tns:RemoveTrackingNumberFromShipment"/>
+    </wsdl:message>
+    <wsdl:message name="RemoveTrackingNumberFromShipmentSoapOut">
+        <wsdl:part name="parameters" element="tns:RemoveTrackingNumberFromShipmentResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SearchMoreSalesOrdersSoapIn">
+        <wsdl:part name="parameters" element="tns:SearchMoreSalesOrders"/>
+    </wsdl:message>
+    <wsdl:message name="SearchMoreSalesOrdersSoapOut">
+        <wsdl:part name="parameters" element="tns:SearchMoreSalesOrdersResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SearchSalesOrdersSoapIn">
+        <wsdl:part name="parameters" element="tns:SearchSalesOrders"/>
+    </wsdl:message>
+    <wsdl:message name="SearchSalesOrdersSoapOut">
+        <wsdl:part name="parameters" element="tns:SearchSalesOrdersResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalClubKeysSoapIn">
+        <wsdl:part name="parameters" element="tns:SetExternalClubKeys"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalClubKeysSoapOut">
+        <wsdl:part name="parameters" element="tns:SetExternalClubKeysResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalCustomerKeySoapIn">
+        <wsdl:part name="parameters" element="tns:SetExternalCustomerKey"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalCustomerKeySoapOut">
+        <wsdl:part name="parameters" element="tns:SetExternalCustomerKeyResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalOfferKeysSoapIn">
+        <wsdl:part name="parameters" element="tns:SetExternalOfferKeys"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalOfferKeysSoapOut">
+        <wsdl:part name="parameters" element="tns:SetExternalOfferKeysResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalSalesOrderKeySoapIn">
+        <wsdl:part name="parameters" element="tns:SetExternalSalesOrderKey"/>
+    </wsdl:message>
+    <wsdl:message name="SetExternalSalesOrderKeySoapOut">
+        <wsdl:part name="parameters" element="tns:SetExternalSalesOrderKeyResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SetFulfillmentExceptionSoapIn">
+        <wsdl:part name="parameters" element="tns:SetFulfillmentException"/>
+    </wsdl:message>
+    <wsdl:message name="SetFulfillmentExceptionSoapOut">
+        <wsdl:part name="parameters" element="tns:SetFulfillmentExceptionResponse"/>
+    </wsdl:message>
+    <wsdl:message name="UpdateShipmentStatusSoapIn">
+        <wsdl:part name="parameters" element="tns:UpdateShipmentStatus"/>
+    </wsdl:message>
+    <wsdl:message name="UpdateShipmentStatusSoapOut">
+        <wsdl:part name="parameters" element="tns:UpdateShipmentStatusResponse"/>
+    </wsdl:message>
+    <wsdl:message name="VoidSalesOrderSoapIn">
+        <wsdl:part name="parameters" element="tns:VoidSalesOrder"/>
+    </wsdl:message>
+    <wsdl:message name="VoidSalesOrderSoapOut">
+        <wsdl:part name="parameters" element="tns:VoidSalesOrderResponse"/>
+    </wsdl:message>
+    <wsdl:message name="AddOrRemoveTagSoapIn">
+        <wsdl:part name="parameters" element="tns:AddOrRemoveTag"/>
+    </wsdl:message>
+    <wsdl:message name="AddOrRemoveTagSoapOut">
+        <wsdl:part name="parameters" element="tns:AddOrRemoveTagResponse"/>
+    </wsdl:message>
+    <wsdl:message name="AddUpdatePickupLocationSoapIn">
+        <wsdl:part name="parameters" element="tns:AddUpdatePickupLocation"/>
+    </wsdl:message>
+    <wsdl:message name="AddUpdatePickupLocationSoapOut">
+        <wsdl:part name="parameters" element="tns:AddUpdatePickupLocationResponse"/>
+    </wsdl:message>
+    <wsdl:portType name="SalesOrderServiceSoap">
+        <wsdl:operation name="AddExternalClubKeys">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Add external club keys on a shipment. If a ShipmentKey is not specified, club keys will be added to all shipments within the order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:AddExternalClubKeysSoapIn"/>
+            <wsdl:output message="tns:AddExternalClubKeysSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="AddExternalOfferKeys">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Add external offer keys on an order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:AddExternalOfferKeysSoapIn"/>
+            <wsdl:output message="tns:AddExternalOfferKeysSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="AddTrackingNumber">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Adds tracking numbers to the specified shipment in a salesorder.
+            </wsdl:documentation>
+            <wsdl:input message="tns:AddTrackingNumberSoapIn"/>
+            <wsdl:output message="tns:AddTrackingNumberSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfSalesOrder">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Checks the compliance of the specified salesorder.
+            </wsdl:documentation>
+            <wsdl:input message="tns:CheckComplianceOfSalesOrderSoapIn"/>
+            <wsdl:output message="tns:CheckComplianceOfSalesOrderSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfSalesOrderWithAddressValidation">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Checks the compliance of the specified salesorder and includes address suggestions.
+            </wsdl:documentation>
+            <wsdl:input message="tns:CheckComplianceOfSalesOrderWithAddressValidationSoapIn"/>
+            <wsdl:output message="tns:CheckComplianceOfSalesOrderWithAddressValidationSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfAndCommitSalesOrder">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Checks the compliance of the specified salesorder and commits it to the system.
+            </wsdl:documentation>
+            <wsdl:input message="tns:CheckComplianceOfAndCommitSalesOrderSoapIn"/>
+            <wsdl:output message="tns:CheckComplianceOfAndCommitSalesOrderSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="ClearFulfillmentException">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Clears fulfillment exception(s) from an order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:ClearFulfillmentExceptionSoapIn"/>
+            <wsdl:output message="tns:ClearFulfillmentExceptionSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="CommitSalesOrder">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Commits the specified salesorder.
+            </wsdl:documentation>
+            <wsdl:input message="tns:CommitSalesOrderSoapIn"/>
+            <wsdl:output message="tns:CommitSalesOrderSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="CommitSalesOrderUpdateKey">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Commits the specified salesorder and updates old sales order key to new sales order key
+            </wsdl:documentation>
+            <wsdl:input message="tns:CommitSalesOrderUpdateKeySoapIn"/>
+            <wsdl:output message="tns:CommitSalesOrderUpdateKeySoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleFulfillmentHouses">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Get possible fulfillment house values.
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetPossibleFulfillmentHousesSoapIn"/>
+            <wsdl:output message="tns:GetPossibleFulfillmentHousesSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleRuleTypes">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Get possible rule type values.
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetPossibleRuleTypesSoapIn"/>
+            <wsdl:output message="tns:GetPossibleRuleTypesSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleShippingServices">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Get possible shipping service values.
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetPossibleShippingServicesSoapIn"/>
+            <wsdl:output message="tns:GetPossibleShippingServicesSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrder">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the specified salesorder.
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetSalesOrderSoapIn"/>
+            <wsdl:output message="tns:GetSalesOrderSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderExtended">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the specified salesorder with extended third-party advertiser details (when available).
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetSalesOrderExtendedSoapIn"/>
+            <wsdl:output message="tns:GetSalesOrderExtendedSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderWithTaxDetails">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the specified salesorder with extended tax details (when available).
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetSalesOrderWithTaxDetailsSoapIn"/>
+            <wsdl:output message="tns:GetSalesOrderWithTaxDetailsSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderStatus">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the current compliance status of the salesorder and each of its shipments.
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetSalesOrderStatusSoapIn"/>
+            <wsdl:output message="tns:GetSalesOrderStatusSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="GetVersion">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the version number of the web service.
+            </wsdl:documentation>
+            <wsdl:input message="tns:GetVersionSoapIn"/>
+            <wsdl:output message="tns:GetVersionSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="PersistSalesOrder">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Persists the specified salesorder to the system.
+            </wsdl:documentation>
+            <wsdl:input message="tns:PersistSalesOrderSoapIn"/>
+            <wsdl:output message="tns:PersistSalesOrderSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="RemoveTrackingNumberFromShipment">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Removes a tracking number from the specified shipment.
+            </wsdl:documentation>
+            <wsdl:input message="tns:RemoveTrackingNumberFromShipmentSoapIn"/>
+            <wsdl:output message="tns:RemoveTrackingNumberFromShipmentSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SearchMoreSalesOrders">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the next page of salesorder results based on a previous search.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SearchMoreSalesOrdersSoapIn"/>
+            <wsdl:output message="tns:SearchMoreSalesOrdersSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SearchSalesOrders">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves the first page of salesorder results based on the given search parameters.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SearchSalesOrdersSoapIn"/>
+            <wsdl:output message="tns:SearchSalesOrdersSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalClubKeys">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Sets external club keys on a shipment. If a ShipmentKey is not specified, club keys will be set on all shipments within the order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SetExternalClubKeysSoapIn"/>
+            <wsdl:output message="tns:SetExternalClubKeysSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalCustomerKey">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Sets an external customer key on an order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SetExternalCustomerKeySoapIn"/>
+            <wsdl:output message="tns:SetExternalCustomerKeySoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalOfferKeys">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Sets external offer keys on an order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SetExternalOfferKeysSoapIn"/>
+            <wsdl:output message="tns:SetExternalOfferKeysSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalSalesOrderKey">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Sets an external order key on an order.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SetExternalSalesOrderKeySoapIn"/>
+            <wsdl:output message="tns:SetExternalSalesOrderKeySoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="SetFulfillmentException">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Sets the FulfillmentException on a SalesOrder or Shipment.
+            </wsdl:documentation>
+            <wsdl:input message="tns:SetFulfillmentExceptionSoapIn"/>
+            <wsdl:output message="tns:SetFulfillmentExceptionSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateShipmentStatus">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Updates the shipment status of the specified shipment. If the current shipment status is voided, the shipment status may not be updated.
+            </wsdl:documentation>
+            <wsdl:input message="tns:UpdateShipmentStatusSoapIn"/>
+            <wsdl:output message="tns:UpdateShipmentStatusSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="VoidSalesOrder">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Voids each shipment in the specified salesorder.
+            </wsdl:documentation>
+            <wsdl:input message="tns:VoidSalesOrderSoapIn"/>
+            <wsdl:output message="tns:VoidSalesOrderSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="AddOrRemoveTag">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Add or Remove a tag from a Sales Order
+            </wsdl:documentation>
+            <wsdl:input message="tns:AddOrRemoveTagSoapIn"/>
+            <wsdl:output message="tns:AddOrRemoveTagSoapOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="AddUpdatePickupLocation">
+            <wsdl:documentation
+                xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Sets a Pickup address for a Shipment, this is used to support FedEx Hold at Location (HAL) service. *** EXPERIMENTAL ***
+            </wsdl:documentation>
+            <wsdl:input message="tns:AddUpdatePickupLocationSoapIn"/>
+            <wsdl:output message="tns:AddUpdatePickupLocationSoapOut"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="SalesOrderServiceSoap" type="tns:SalesOrderServiceSoap">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="AddExternalClubKeys">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/AddExternalClubKeys"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddExternalOfferKeys">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/AddExternalOfferKeys"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddTrackingNumber">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/AddTrackingNumber"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfSalesOrder">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/CheckComplianceOfSalesOrder"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfSalesOrderWithAddressValidation">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/CheckComplianceOfSalesOrderWithAddressValidation"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfAndCommitSalesOrder">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/CheckComplianceOfAndCommitSalesOrder"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ClearFulfillmentException">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/ClearFulfillmentException"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CommitSalesOrder">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/CommitSalesOrder"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CommitSalesOrderUpdateKey">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/CommitSalesOrderUpdateKey"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleFulfillmentHouses">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetPossibleFulfillmentHouses"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleRuleTypes">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetPossibleRuleTypes"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleShippingServices">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetPossibleShippingServices"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrder">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrder"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderExtended">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrderExtended"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderWithTaxDetails">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrderWithTaxDetails"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderStatus">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrderStatus"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetVersion">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/GetVersion"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="PersistSalesOrder">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/PersistSalesOrder"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="RemoveTrackingNumberFromShipment">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/RemoveTrackingNumberFromShipment"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SearchMoreSalesOrders">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SearchMoreSalesOrders"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SearchSalesOrders">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SearchSalesOrders"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalClubKeys">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalClubKeys"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalCustomerKey">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalCustomerKey"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalOfferKeys">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalOfferKeys"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalSalesOrderKey">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalSalesOrderKey"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetFulfillmentException">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/SetFulfillmentException"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateShipmentStatus">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/UpdateShipmentStatus"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="VoidSalesOrder">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/VoidSalesOrder"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddOrRemoveTag">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/AddOrRemoveTag"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddUpdatePickupLocation">
+            <soap:operation style="document" soapAction="http://ws.shipcompliant.com/AddUpdatePickupLocation"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:binding name="SalesOrderServiceSoap12" type="tns:SalesOrderServiceSoap">
+        <soap12:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="AddExternalClubKeys">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/AddExternalClubKeys"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddExternalOfferKeys">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/AddExternalOfferKeys"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddTrackingNumber">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/AddTrackingNumber"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfSalesOrder">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/CheckComplianceOfSalesOrder"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfSalesOrderWithAddressValidation">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/CheckComplianceOfSalesOrderWithAddressValidation"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CheckComplianceOfAndCommitSalesOrder">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/CheckComplianceOfAndCommitSalesOrder"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ClearFulfillmentException">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/ClearFulfillmentException"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CommitSalesOrder">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/CommitSalesOrder"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CommitSalesOrderUpdateKey">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/CommitSalesOrderUpdateKey"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleFulfillmentHouses">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetPossibleFulfillmentHouses"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleRuleTypes">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetPossibleRuleTypes"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetPossibleShippingServices">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetPossibleShippingServices"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrder">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrder"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderExtended">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrderExtended"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderWithTaxDetails">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrderWithTaxDetails"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSalesOrderStatus">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetSalesOrderStatus"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetVersion">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/GetVersion"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="PersistSalesOrder">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/PersistSalesOrder"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="RemoveTrackingNumberFromShipment">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/RemoveTrackingNumberFromShipment"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SearchMoreSalesOrders">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SearchMoreSalesOrders"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SearchSalesOrders">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SearchSalesOrders"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalClubKeys">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalClubKeys"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalCustomerKey">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalCustomerKey"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalOfferKeys">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalOfferKeys"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetExternalSalesOrderKey">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SetExternalSalesOrderKey"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="SetFulfillmentException">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/SetFulfillmentException"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateShipmentStatus">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/UpdateShipmentStatus"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="VoidSalesOrder">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/VoidSalesOrder"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddOrRemoveTag">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/AddOrRemoveTag"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddUpdatePickupLocation">
+            <soap12:operation style="document" soapAction="http://ws.shipcompliant.com/AddUpdatePickupLocation"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="SalesOrderService">
+        <wsdl:port name="SalesOrderServiceSoap" binding="tns:SalesOrderServiceSoap">
+            <soap:address location="https://ws-test.shipcompliant.com/services/1.2/SalesOrderService.asmx"/>
+        </wsdl:port>
+        <wsdl:port name="SalesOrderServiceSoap12" binding="tns:SalesOrderServiceSoap12">
+            <soap12:address location="https://ws-test.shipcompliant.com/services/1.2/SalesOrderService.asmx"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

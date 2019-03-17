@@ -1,0 +1,90 @@
+#%RAML 0.8
+baseUri: https://mocksvc.mulesoft.com/mocks/22af1815-e691-4323-ac32-e3870b3a05cc
+title: PRNA-EComm-Products
+version: 1.0
+
+/ecomm/retailers:
+  description: Get all retailers for specified locale
+  get:
+    description: Method to return a list of retailers based on input locale
+    headers: 
+      username:
+        required: true
+        description: application username
+      api-key:
+        required: true
+        description: key to access the application
+    queryParameters: 
+      locale:
+        description: Locale defined by <language>_<country>
+        type: string
+        required: true
+        example: en_CA
+        default: en_CA
+    responses: 
+      200:
+        body: 
+          application/json:
+            example: |
+              {
+                "id": "en_CA-generic",
+                "label": "English (Canada) - Generic Partner",
+                "market": "CA",
+                "marketLabel": "Canada"
+              }
+
+/ecomm/{retailer}/brands:
+    displayName: Brands
+    description: Get Brands for the specified retailer id
+    uriParameters: 
+      retailer: 
+        type: string
+        required: true       
+    get:
+      headers: 
+        username:
+          required: true
+          description: application username
+        api-key:
+          required: true
+          description: key to access the application
+      responses: 
+        200:
+          body: 
+            application/json:
+              example: |
+                {  
+                 "brandLabel": [
+                    "Absolut",
+                    "Jacob's Creek",
+                    "Hiram Walker",
+                    "Malibu"
+                    ]
+                }
+        
+/ecomm/{retailer}/products:
+    displayName: Products
+    description: Get all products for the retailer
+    uriParameters: 
+      retailer: 
+        type: string
+        required: true
+    get:
+      headers: 
+        username:
+          required: true
+          description: application username
+        api-key:
+          required: true
+          description: key to access the application
+      queryParameters: 
+        brandLabel:
+          type: string
+          required: false
+      responses: 
+        200:
+          body: 
+            application/json:
+              
+      
+  

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd">
+     <db:oracle-config name="App_DB_Configuration"    doc:name="Oracle Configuration" host="${coreapi.db.host}" instance="${coreapi.db.instance}" password="${coreapi.db.password}" port="${coreapi.db.port}" user="${coreapi.db.username}"/>
+ <http:request-config name="GetPlaceDetails" protocol="HTTPS" host="${map.googleapi.host}" port="${map.googleapi.port}" doc:name="HTTP Request Configuration" basePath="${map.googleapi.baseurl}"/>
+  <http:request-config name="Grails_Request_Configuration" host="${coreapi.grails.host}" port="${coreapi.grails.port}" doc:name="HTTP Request Configuration" connectionIdleTimeout="60000">
+    </http:request-config>
+    <http:request-config name="PIM_HTTPS_Request_Configuration" protocol="HTTPS" host="${pim.host}" port="${map.googleapi.port}" basePath="${pim.basepath}" doc:name="HTTP Request Configuration"/>
+     <db:oracle-config name="Order_DB_Configuration"    doc:name="Oracle Configuration" host="${coreapi.order.db.host}" instance="${coreapi.order.db.instance}" password="${coreapi.order.db.password}" port="${coreapi.order.db.port}" user="${coreapi.order.db.username}"/>
+    
+<http:request-config name="Order_HTTP_Request_Configuration" host="#[flowVars.BASE_URL]" port="443" doc:name="HTTP Request Configuration"  connectionIdleTimeout="35000" protocol="HTTPS"/>
+</mule>

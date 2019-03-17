@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mule-project xmlns="http://www.mulesoft.com/tooling/project" runtimeId="org.mule.tooling.server.3.8.5.ee" schemaVersion="5.3.0.0">
+    <name>pr-na-app-coreapi</name>
+    <description></description>
+    <muleExtension name="Secure Property Placeholder" qualifier="org.mule.tooling.ui.contribution.secure-property-placeholder.3.7.3"/>
+    <muleExtension name="LDAP" qualifier="org.mule.tooling.ui.contribution.ldap.3.6.0"/>
+    <muleExtension name="Cloudhub" qualifier="org.mule.tooling.ui.contribution.cloudhub.3.6.0"/>
+    <muleExtension name="AMQP-0-9" qualifier="mule-transport-amqp-contribution"/>
+</mule-project>

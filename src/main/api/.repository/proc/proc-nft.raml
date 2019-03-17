@@ -1,0 +1,177 @@
+#%RAML 0.8
+title: NeedfulThings Rest API Portal
+version: 1.0
+baseUri: http://pr-na-app-restapi-dev.cloudhub.io/proc/needfulThings/v1
+
+/login/auth:
+  post:
+      body:
+        application/json:
+          schema: |
+            {
+              "$schema": "http://json-schema.org/draft-03/schema",
+              "type": "object",
+              "properties": 
+                {
+                  "username": { "type": "string", "required": true },
+                  "password": { "type": "string", "required": true }
+                }
+              }
+      responses:
+        200:
+         body:
+            application/json:
+/getAppMetaData:
+  displayName: Get URLs for all calls
+  get:
+    queryParameters:
+      app:
+        description: Application name
+        required: true
+        type: string
+        example: needfulThings
+    responses:
+      200:
+        body:
+          application/json:
+      
+/getPlacesBrands:
+  displayName: Get Brands
+  get:
+    description: return JSON formatted list of available Corby/US Brands
+    headers:
+        Authorization:
+          description: Require auroization header
+          type: string
+          required: true
+          example: bearer 650cc3fff0e13c60d8f6c9d058b2a3ae
+    queryParameters:
+      loc:
+        required: true
+        type: string
+        description: Location
+        example: CAN
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+                {
+                  "brandId": "All",
+                  "brandName": "All"
+                }
+               
+/getPlacesOutlets:
+  displayName: TBD
+  post:
+    headers:
+       Authorization:
+        description: Require auroization header
+        type: string
+        required: true
+        example: bearer 650cc3fff0e13c60d8f6c9d058b2a3ae
+    body:
+      application/json:
+        schema: |
+          {
+            "$schema": "http://json-schema.org/draft-03/schema",
+            "type": "object",
+            "properties": 
+            {
+              "loc": { "type": "string", "required": true },
+              "brandId": { "type": "string", "required": true },
+              "outletGroup": { "type": "string", "required": true },
+              "patioOnlyFg": { "type": "string", "required": true },
+              "lat": {"type": "number", "required": true },
+              "lng": {"type": "number", "required": true },
+              "proximity": { "type": "integer", "required": true }
+            }
+          }
+        example: |
+          {
+            "loc": "CAN",
+            "brandId": "ABELYX",
+            "outletGroup": "Restaurant",
+            "patioOnlyFg": "N",
+            "lat": 42.326037,
+            "lng": -83.012405,
+            "proximity": 2
+          }
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "outletName": "OLDE WALKERVILLE VITO'S PIZZER",
+                "address": "1731 WYANDOTTE ST E",
+                "city": "Windsor",
+                "province": "ON",
+                "outletType": "Resto/Bar",
+                "lat": 42.3220335,
+                "lng": -83.0145722,
+                "distanceFromOutlet": 2.6,
+                "sfAccountId": "001D0000016ezryIAA",
+                "phone": "5199156145",
+                "cell": "5199156145",
+                "decisionMaker": "Billy or Michelle",
+                "patioCapacity": 22,
+                "salesRepFirstName": "Dino",
+                "salesRepLastName": "Ceccucci"
+              }
+
+/getPlacesOutletGroups:
+  displayName: TBD
+  get:
+    description: return JSON formatted list of available Corby/US Brands
+    queryParameters:
+      loc:
+        description: Location
+        required: true
+        type: string
+        example: CAN
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "outletGroup": "All"
+              }
+/getPlaces/moreInfo:
+  displayName: gePlacesInfo
+  post:
+    description: get details for selected Place
+    body:
+      application/json:
+        example: |
+          [{
+            "lng":-83.0226889,
+            "outletName":"MEZZO",
+            "lat":42.3129039
+           }]
+    responses:
+      200:
+        body:
+          application/json:
+  options:
+    description: get allowed details 
+    responses:
+      200:
+        headers:
+          Allow:
+            description: Allowed methods
+            example: POST
+            type: string
+/{generic}:
+  displayName: Generic catch all
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+  post:
+    responses:
+      200:
+        body:
+          application/json:

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd">
+	<secure-property-placeholder:config
+		name="Common_Secure_Property_Placeholder" key="${mule.properties.key}"
+		location="common.${mule.env}.properties" doc:name="Secure Property Placeholder" />
+
+	<http:listener-config name="HTTPS_Listener_Configuration"
+		host="0.0.0.0" port="${https.port}" doc:name="HTTP Listener Configuration" protocol="HTTPS">
+        <tls:context>
+            <tls:key-store path="testserver.jks" keyPassword="p3rn0d" password="p3rn0d"/>
+        </tls:context>
+<!--         <tls:context> -->
+<!--             <tls:trust-store type="jceks" insecure="true"/> -->
+<!--             <tls:key-store type="pkcs12" path="testserver.jks" keyPassword="p3rn0d" password="p3rn0d"/> -->
+<!--         </tls:context> -->
+
+	</http:listener-config>
+
+	
+	<http:request-config name="HTTPS_Outbound_Configuration"
+		host="localhost" port="${https.port}" doc:name="HTTP Request Configuration"
+		protocol="HTTPS">
+        <tls:context>
+            <tls:trust-store path="testclient_truststore.ts" password="p3rn0d"/>
+        </tls:context>
+
+	</http:request-config>
+
+
+	<cloudhub:token-config name="Cloudhub__Inhered_Token_Authentication"
+		doc:name="Cloudhub: Inhered Token Authentication" />
+
+</mule>

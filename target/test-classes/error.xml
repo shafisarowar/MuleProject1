@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd">
+    <sub-flow name="NotifyUsersFromCloudhub">
+        <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="#['ALERT - '+app.name+' failure caused by : '+flowVars.error_msg+' \n'+org.mule.util.ExceptionUtils.getFullStackTrace(exception)]" priority="ERROR" doc:name="Cloudhub Notification"/>
+        <db:insert config-ref="App_DB_Configuration" doc:name="Write to Logging Table">
+            <db:parameterized-query><![CDATA[insert into OCELOT.WEB_APPLICATION_LOG(ID, TIMESTAMP, USERID, LOGGER, URL, PRIORITY, MESSAGE, ERROR) values (OCELOT.WEB_APPLICATION_LOG_SEQ.nextval,sysdate, #[server.userName], #[app.name + '.cloudhub.io'], #[message.inboundProperties.'http.request.path'], 'ERROR', #[exception.message], #[exception.exception])]]></db:parameterized-query>
+        </db:insert>
+    </sub-flow>
+      <choice-exception-strategy name="UnauthenticatedAccessExceptions">
+            <catch-exception-strategy when="#[flowVars.EcommAPIAuthentication==false]" doc:name="Catch Exception Strategy">
+                <set-property propertyName="Content-type" value="application/json" mimeType="application/java" doc:name="Content-type"/>
+                <set-property propertyName="http.status" value="401" doc:name="http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;Unauthorized&quot; }" mimeType="application/json" doc:name="Set Error Payload"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    <flow name="Error:SendErrorEmail">
+        <set-payload value="#[flowVars.ErrorDetails.email_body]" mimeType="application/java" doc:name="Set Email Body"/>
+        <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}" to="#[flowVars.ErrorDetails.email_to]" from="#[flowVars.ErrorDetails.email_from]" subject="#[flowVars.ErrorDetails.email_subject]" responseTimeout="10000" doc:name="SMTP"/>
+    </flow>
+</mule>

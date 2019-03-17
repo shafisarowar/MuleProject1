@@ -1,0 +1,83 @@
+#%RAML 1.0
+title: spendIT
+version: 1.0
+baseUri: https://localhost:1024/api/spendIT
+
+types:
+  businessUnit:
+    type: object
+    properties: 
+      countryCode: string
+      businessUnit: string
+      businessUnitDesc: string
+      currencyCode: string
+
+  account:
+    type: object
+    properties: 
+      countryCode: string
+      accountCode: string
+      accountDesc: string
+
+  actual:
+    type: object
+    properties: 
+      countryCode: string
+      businessUnit: string
+      fiscalYear: number
+      month: number
+      accountCode: string
+      amount: number
+      invoiceCurrencyCode: string
+      deltaOrFullFY: 
+        type: string
+        required: false
+
+
+/actuals:
+  post:
+    headers: 
+      api-key:
+        type: string
+        required: true
+      username:
+        type: string
+        required: true
+        
+    body: 
+      application/json:
+        type: object
+        properties: 
+          businessUnits: businessUnit[]
+          accounts: account[]
+          actuals: actual[]   
+
+    responses: 
+      200:
+        body: 
+          application/json:
+            example: |
+              {
+                "message": "OK",
+                "details": {
+                  "batchID": 1073,
+                  "numberOfBusinessUnitsInserted": 2,
+                  "numberOfAccountsInserted": 2,
+                  "numberOfActualsInserted": 2
+                }
+              }
+      401:
+        body: 
+          application/json:
+            example: |
+              {
+                "message": "Unauthorized"
+              }
+      500:
+        body:
+          application/json:
+            example: |
+              {
+                "message": "Database exception"
+              }
+            

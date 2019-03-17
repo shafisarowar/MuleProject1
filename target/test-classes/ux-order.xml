@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd">
+    <http:listener-config name="ux-prna-httpListenerConfig" host="0.0.0.0" port="8085" doc:name="HTTP Listener Configuration" />
+    <apikit:config name="ux-prna-config" raml="ux/ux-order.raml" consoleEnabled="false" doc:name="Router" />
+    <flow name="ux-prna-main">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="/ecomm/*" doc:name="HTTPS" />
+        <apikit:router config-ref="ux-prna-config" doc:name="APIkit Router" />
+        <exception-strategy ref="ux-prna-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="ux-prna-console">
+        <http:listener config-ref="ux-prna-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="ux-prna-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="post:/order:ux-prna-config">
+        <flow-ref name="ux-orderFlow" doc:name="ux-orderFlow" />
+    </flow>
+    <flow name="post:/order/webhook:ux-prna-config">
+        <flow-ref name="ux-orderFlow" doc:name="ux-orderFlow" />
+    </flow>
+    <flow name="ux-orderFlow">
+        <logger message="Ecomm-order:The Order Data is : #[message.payloadAs(java.lang.String)]" level="DEBUG" doc:name="Log Order Data" />
+        <logger message="Ecomm-order:#[app.name]" level="DEBUG" doc:name="Logger" />
+        <set-payload value="#[payload]" doc:name="Get Order Data" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert Order Data to Object" />
+        <set-session-variable variableName="orderData" value="#[payload]" doc:name="Set  orderData = Order Data" />
+        <flow-ref name="Authentication:ChannelToPRNA" doc:name="Authentication:ChannelToPRNA" />
+        <validation:is-true expression="#[payload.authentication]" doc:name="Security Validation" />
+        <flow-ref name="post:/order:proc-prna-config" doc:name="post:/order:proc-prna-config" />
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[payload.authentication==false]" doc:name="Catch Exception Strategy">
+                <set-payload value="#['Authentication Failed']" doc:name="Authentication Failure" />
+                <set-property propertyName="http.status" value="200" doc:name="httpStatus" />
+                <set-property propertyName="http.reason" value="Unauthorized" doc:name="httpReason" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="post:/order/cancel:ux-prna-config">
+        <flow-ref name="ux-cancelOrderFlow" doc:name="ux-cancelOrderFlow" />
+    </flow>
+    <flow name="post:/order/webhook/cancel:ux-prna-config">
+        <flow-ref name="ux-cancelOrderFlow" doc:name="ux-cancelOrderFlow" />
+    </flow>
+    <flow name="ux-cancelOrderFlow">
+        <logger message="Ecomm-order:The Order Data is : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log Order Data" />
+        <set-payload value="#[payload]" doc:name="Get Order Data" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert Order Data to Object" />
+        <set-session-variable variableName="orderCancelData" value="#[payload]" doc:name="Set  orderCancelData = Order Data" />
+        <flow-ref name="Authentication:ChannelToPRNA" doc:name="Authentication:ChannelToPRNA" />
+        <validation:is-true expression="#[payload.authentication]" doc:name="Security Validation" />
+        <flow-ref name="post:/order/cancel:proc-prna-config" doc:name="post:/order/cancel:proc-prna-config" />
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[payload.authentication==false]" doc:name="Catch Exception Strategy">
+                <set-payload value="#['Authentication Failed']" doc:name="Authentication Failure" />
+                <set-property propertyName="http.status" value="200" doc:name="httpStatus" />
+                <set-property propertyName="http.reason" value="Unauthorized" doc:name="httpReason" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="Ecomm-Order:ux-orderFulfillment">
+        <set-payload value="#[payload]" doc:name="Get Fulfillment Data"/>
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert Fulfillment Data to Object"/>
+        <set-session-variable variableName="orderFulfillmentData" value="#[payload]" doc:name="Set  orderFulfillmentData = Fulfillment Data"/>
+        <flow-ref name="Authentication:ChannelToPRNA" doc:name="Authentication:ChannelToPRNA"/>
+        <validation:is-true config-ref="Validation_Configuration" expression="#[payload.authentication]" doc:name="User Authentication"/>
+        <flow-ref name="post:/order/fulfillment:proc-prna-config" doc:name="post:/order/fulfillment:proc-prna-config"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy doc:name="Catch Exception Strategy - User Authentication">
+                <set-property propertyName="http.status" value="401" doc:name="Property"/>
+                <set-payload value="{ &quot;message&quot;: &quot;User not authorized&quot; }" mimeType="application/json" doc:name="Set Payload"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="post:/order/fulfillment:ux-prna-config">
+        <logger message="Ecomm-order:The Fulfillment Data is : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log Fulfillment Data" />
+        <flow-ref name="Ecomm-Order:ux-orderFulfillment" doc:name="Ecomm-Order:ux-orderFulfillment"/>
+    </flow>
+     <flow name="post:/order/webhook/fulfillment:ux-prna-config">
+        <logger message="Ecomm-order(webhook):The Fulfillment Data is : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log Fulfillment Data"/>
+        <flow-ref name="Ecomm-Order:ux-orderFulfillment" doc:name="Ecomm-Order:ux-orderFulfillment"/>
+    </flow>
+    <flow name="post:/product/inventory/update:ux-prna-config">
+        <logger message="Ecomm-order:The Sync Inventory Data is : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log Sync Inventory Data" />
+        <logger message="The app name is #[app.name]" level="DEBUG" doc:name="Logger" />
+        <set-payload value="#[payload]" doc:name="Get Inventory Data" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert Inventory Data to Object" />
+        <set-session-variable variableName="syncInventoryData" value="#[payload]" doc:name="Set  syncInventoryData = Sync Inventory Data" />
+        <flow-ref name="Authentication:WarehouseToPRNA" doc:name="Authentication:WarehouseToPRNA" />
+        <validation:is-true config-ref="Validation_Configuration" expression="#[payload.authentication]" doc:name="User Authentication" />
+        <flow-ref name="post:/product/inventory/update:proc-prna-config" doc:name="post:/order/inventory:proc-prna-config" />
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy doc:name="Catch Exception Strategy - User Authentication">
+                <set-property propertyName="http.status" value="401" doc:name="Property" />
+                <set-payload value="{ &quot;message&quot;: &quot;User not authorized&quot; }" mimeType="application/json" doc:name="Set Payload" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <apikit:mapping-exception-strategy name="ux-prna-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Resource Not Found" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Method not allowed" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Media Type not supported" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Request can not be accepted" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="500">
+            <apikit:exception value="java.net.NoRouteToHostException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Can not connect to Warehouse&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Payment required" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="500">
+            <apikit:exception value="java.sql.SQLException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Can not connect to Database&quot; }" doc:name="Set Payload" />
+            <logger message="Ecomm-order:SQL Exception" level="INFO" doc:name="Logger" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CONNECTION ERROR - Connection Error" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

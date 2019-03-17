@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd">
+    <flow name="proxyFlow">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="${nft.ux}/*" doc:name="/ux/needfulThings/v1/*"/>
+        <set-variable variableName="reqURI" value="#[message.inboundProperties.'http.request.uri']" doc:name="Request URI"/>
+        <set-variable variableName="procURI" value="#[flowVars.reqURI.replace('${nft.ux}','${nft.proc}')]" doc:name="procURI"/>
+        <flow-ref name="uxRemoteProxyFlow" doc:name="uxRemoteProxyFlow"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#['The request cannot be processed\n host:'+message.inboundProperties.host+'\n URI: ' + flowVars.procURI + '\n' + exception.getSummaryMessage()]" doc:name="Error Message" mimeType="text/plain"/>
+            <set-property propertyName="http.status" value="500" doc:name="Http status"/>
+        </catch-exception-strategy>
+    </flow>
+    <sub-flow name="uxRemoteProxyFlow">
+        <logger message="Outbound Query for procURI  : #[flowVars.procURI]" level="DEBUG" doc:name="Outbound query"/>
+        <copy-properties propertyName="*" doc:name="In to Out"/>
+        <http:request config-ref="HTTPS_Outbound_Configuration" path="#[flowVars.procURI]" method="#[message.inboundProperties.'http.method']" doc:name="/proc/needfulThings/v1/*"/>
+    </sub-flow>
+</mule>

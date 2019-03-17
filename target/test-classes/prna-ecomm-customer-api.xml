@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+    <apikit:config name="prna-ecomm-customer-api-config" raml="prna-ecomm-customer-api.raml" consoleEnabled="false" doc:name="Router" keepRamlBaseUri="false"/>
+    <http:request-config name="HTTPS_CDB_Request_Configuration" protocol="HTTPS" host="#[flowVars.APIDetails.consumer_host]" port="${map.googleapi.port}" basePath="/#[flowVars.APIDetails.base_url]" doc:name="HTTP Request Configuration" />
+    <flow name="prna-ecomm-customer-api-main">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="/ecomm/customer/*" doc:name="HTTPS" />
+        <apikit:router config-ref="prna-ecomm-customer-api-config" doc:name="APIkit Router" />
+        <exception-strategy ref="prna-ecomm-customer-api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="post:/webhooks:prna-ecomm-customer-api-config">
+        <flow-ref name="Ecommapi:webhook-security" doc:name="Ecommapi:webhook-security"/>
+        <validation:is-true expression="#[flowVars.webhookAuth]" doc:name="Validate: Authentication"/>
+        <logger message="SHOPIFY REQUEST JSON ECOMM_CUSTOMER: #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log-DEBUG: RequestJSON"/>
+        <dw:transform-message doc:name="DW: Set webhookMetaData &amp; webhookData">
+            <dw:set-variable variableName="webhookMetaData"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	channel:inboundProperties['http.query.params'].channel,
+	event:inboundProperties['http.query.params'].event
+}]]></dw:set-variable>
+            <dw:set-variable variableName="webhookData"><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="Ecomm-Customer:getDestinationSchema" doc:name="Ecomm-Customer:getDestinationSchema"/>
+        <flow-ref name="Ecomm-Customer:postDataToCDB" doc:name="Ecomm-Customer:postDataToCDB"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy doc:name="Catch Exception Strategy - User Authentication" logException="false" when="#[flowVars.webhookAuth==false]">
+                <set-property propertyName="http.status" value="401" doc:name="Property: http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;User not authorized&quot; }" mimeType="application/json" doc:name="Set Error Message as Payload"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <sub-flow name="Ecomm-Customer:getDestinationSchema">
+        <db:select config-ref="App_DB_Configuration" doc:name="Database: Select Destination Schema">
+            <db:parameterized-query><![CDATA[SELECT REPLACE(A.DESTINATION_SCHEMA,'@payloadData','flowVars.webhookData') as SCHEMA, A.API_PATH, B.CONSUMER_HOST, B.BASE_URL,B.API_KEY, B.ERROR_EMAILS_TO from JAGUAR.COREAPI_ECOMM_CUST_XREF A JOIN JAGUAR.COREAPI_ECOMM_CONSUMER B ON  A.CONSUMER_ID=B.CONSUMER_ID WHERE UPPER(CHANNEL_ID) = UPPER(#[flowVars.webhookMetaData.channel]) AND UPPER(EVENT) = UPPER(#[flowVars.webhookMetaData.event])]]></db:parameterized-query>
+        </db:select>
+        <set-variable variableName="destinationSchema" value="#[payload[0].SCHEMA]" doc:name="FlowVars: destinationSchema"/>
+        <dw:transform-message doc:name="FlowVars:APIDetails">
+            <dw:set-variable variableName="APIDetails"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	api_path:payload[0].API_PATH,
+	consumer_host:payload[0].CONSUMER_HOST,
+	base_url:payload[0].BASE_URL,
+	api_key:payload[0].API_KEY,
+	error_emails_to: payload[0].ERROR_EMAILS_TO
+}]]></dw:set-variable>
+        </dw:transform-message>
+        
+       <expression-transformer mimeType="application/java" expression="#[dw(flowVars.destinationSchema,'application/java')]" doc:name="Expression: Execute DW from destination schema"/>
+    </sub-flow>
+    <flow name="Ecomm-Customer:postDataToCDB">
+        <logger message="Ecomm-Customer: Creating/Updating Customer #[payload.firstname] #[payload.lastname]" level="INFO" doc:name="Log-INFO: Customer Name"/>
+        <json:object-to-json-transformer mimeType="application/json" doc:name="Convert Payload to JSON"/>
+        <http:request config-ref="HTTPS_CDB_Request_Configuration" path="#[flowVars.APIDetails.api_path]" method="POST" doc:name="HTTPS: CDB Request">
+            <http:request-builder>
+                <http:header headerName="api_key" value="#[flowVars.APIDetails.api_key]"/>
+                <http:header headerName="content-type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <logger message="Ecomm-Customer: STATUS : #[message.inboundProperties.'http.status']  - CDB Response: #[message.payloadAs(java.lang.String)]" level="DEBUG" doc:name="Log-DEBUG: CDB Response"/>
+        <choice doc:name="Check for http status">
+            <when expression="#[message.inboundProperties['http.status']==206]">
+                <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/java" doc:name="JSON Payload to Object"/>
+                <logger message="Ecomm-Customer: Customer was partially accepted." level="INFO" doc:name="Log-INFO: Error message and reason"/>
+                <dw:transform-message doc:name="DW: ErrorDetails">
+                    <dw:set-variable variableName="ErrorDetails"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	email_to: flowVars.APIDetails.error_emails_to,
+	email_from: p('app.error.email.from'),
+	email_subject: "Notification-" ++ upper p('mule.env') ++ ": Error(s) in CDB for " ++ flowVars.webhookMetaData.event ++ " from " ++ flowVars.webhookMetaData.channel,
+	email_body: "The application pr-na-app-coreapi : " ++ p('mule.env') ++ " has received error(s) from CDB. \n "
+				++ (("Customer Name - " ++ payload.firstname ++ " " ++ payload.lastname ++ "\n") when payload.firstname != null otherwise "")
+				++ ("Email - " ++ payload.email  ++ "\n" when payload.email != null otherwise "") ++ "\n"
+				++ "Customer was partially accepted due to the following error(s) \n"
+				++ ("Error Message - " ++ (payload.errors.error joinBy " | " replace "," with ";" )
+		when payload.errors.error  != null	
+		otherwise "No Error Message returned.")
+}]]></dw:set-variable>
+                </dw:transform-message>
+                <flow-ref name="Error:SendErrorEmail" doc:name="Error:SendErrorEmail"/>
+            </when>
+            <otherwise>
+                <logger message="Ecomm-Customer: Customer Created/Updated Successfully." level="INFO" doc:name="Log-INFO: Customer created"/>
+            </otherwise>
+        </choice>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+			<catch-exception-strategy
+				when="#[message.inboundProperties['http.status']==422]"
+				logException="false" doc:name="Catch Exception: http status 422">
+                <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/java" doc:name="JSON to Object"/>
+				<logger message="Ecomm-Customer: STATUS : #[message.inboundProperties.'http.status']  - CDB Response: #[message.payloadAs(java.lang.String)]" level="DEBUG"
+					doc:name="Log-DEBUG: Payload" />
+                <logger message="Ecomm-Customer: Customer was rejected due to errors." level="INFO" doc:name="Log-INFO: Error message and reason"/>
+                <dw:transform-message doc:name="DW: ErrorDetails">
+                    <dw:set-variable variableName="ErrorDetails"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	email_to: flowVars.APIDetails.error_emails_to,
+	email_from: p('app.error.email.from'),
+	email_subject: "Notification-" ++ upper p('mule.env') ++ ": Error(s) in CDB for " ++ flowVars.webhookMetaData.event ++ " from " ++ flowVars.webhookMetaData.channel,
+	email_body: "The application pr-na-app-coreapi : " ++ p('mule.env') ++ " has received error(s) from CDB. \n "
+				++ (("Customer Name - " ++ payload.firstname ++ " " ++ payload.lastname ++ "\n") when payload.firstname != null otherwise "")
+				++ ("Email - " ++ payload.email  ++ "\n" when payload.email != null otherwise "") ++ "\n"
+				++ "Customer was rejected due to the following error(s) \n"
+				++ ("Error Message - " ++ (payload.x-rejection-errors.error joinBy " | " replace "," with ";" )
+		when payload.x-rejection-errors.error  != null	
+		otherwise "No Error Message returned.")
+}]]></dw:set-variable>
+                </dw:transform-message>
+                <flow-ref name="Error:SendErrorEmail" doc:name="Error:SendErrorEmail"/>
+					</catch-exception-strategy>
+            <catch-exception-strategy when="#[message.inboundProperties['http.status']==400]" logException="false" doc:name="Catch Exception: http status 400">
+                <json:json-to-object-transformer returnClass="java.util.Map" mimeType="application/java" doc:name="JSON to Object"/>
+                <logger message="Ecomm-Customer: Customer data not sent. Error - #[payload.message], Reason:  #[payload.reason]" level="ERROR" doc:name="Log-ERROR: Error message and reason"/>
+                <dw:transform-message doc:name="DW: ErrorDetails">
+                    <dw:set-variable variableName="ErrorDetails"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	email_to: flowVars.APIDetails.error_emails_to,
+	email_from: p('app.error.email.from'),
+	email_subject: "Notification-" ++ upper p('mule.env') ++ ": Error(s) in CDB for " ++ flowVars.webhookMetaData.event ++ " from " ++ flowVars.webhookMetaData.channel,
+	email_body: "The application pr-na-app-coreapi : " ++ p('mule.env') ++ " has received error(s) from CDB. \n "
+				++ (("Customer Name - " ++ payload.context.firstname ++ " " ++ payload.context.lastname ++ "\n") when payload.context.firstname != null otherwise "")
+				++ ("Email - " ++ payload.context.email  ++ "\n" when payload.context.email != null otherwise "") ++ "\n"
+				++ "Customer data was not sent to CDB, due to the following error(s) \n"
+				++ ("Error Message - " ++ ( payload.reason[0].message ++ "; field(s) " ++ (payload.reason[0].path joinBy " , "))
+		when payload.reason[0].code  != null	
+		otherwise "No Error Message returned.")
+}]]></dw:set-variable>
+                </dw:transform-message>
+                <flow-ref name="Error:SendErrorEmail" doc:name="Error: SendErrorEmail"/>
+            </catch-exception-strategy>
+					</choice-exception-strategy>
+    </flow>
+    <apikit:mapping-exception-strategy name="prna-ecomm-customer-api-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

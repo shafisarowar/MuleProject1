@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd">
+    <http:listener-config name="ux-sc-order-httpListenerConfig" host="0.0.0.0" port="8089" doc:name="HTTP Listener Configuration"/>
+    <apikit:config name="ux-sc-order-config" raml="ux/ux-sc-order.raml" consoleEnabled="false" doc:name="Router"/>
+    <amqp:connector name="AMQP_0_9_sc_Connector_getSalesOrder_Pub" validateConnections="true" host="${mq.connector.host}" virtualHost="${mq.connector.user}" username="${mq.connector.user}" password="${mq.connector.password}" doc:name="AMQP-0-9 Connector" numberOfChannels="1"/>
+    <amqp:connector name="AMQP_0_9_sc_Connector_getSalesOrder_Con" validateConnections="true" host="${mq.connector.host}" virtualHost="${mq.connector.user}" username="${mq.connector.user}" password="${mq.connector.password}" doc:name="AMQP-0-9 Connector" ackMode="MANUAL" numberOfChannels="1"/>
+    <amqp:endpoint name="AMQP_0_9_sc-Connector-getSalesOrder" exchangeName="${mq.neworder.exchange}" queueName="${mq.neworder.queue}" exchangeType="fanout" responseTimeout="10000" doc:name="AMQP-0-9" queueDurable="true" exchangeDurable="true" />
+    <!--<amqp:connector name="AMQP_0_9_Connector_commitSalesOrder" validateConnections="true" host="fly.rmq.cloudamqp.com" virtualHost="wwxoizlu" username="wwxoizlu" password="yy8C_S5flG3IsOOa2feVuY1Xja-uYr2A" doc:name="AMQP-0-9 Connector" />
+    <amqp:endpoint queueName="${sys.sc.commitSalesOrder.queue}" exchangeType="direct" name="AMQP_0_9-Connector-commitSalesOrder" responseTimeout="10000" doc:name="AMQP-0-9" /> -->
+    <validation:config name="Order_Validation_config" doc:name="Validation Configuration" />
+    <spring:beans>
+        <spring:bean id="ScAndShopifyResponseUx" name="invokeScAndShopifyResponseUx" class="coreapi.ScAndShopifyResponse" />
+    </spring:beans>
+
+    <!--  -->
+      <flow name="ux-sc-order-main">
+         <http:listener config-ref="HTTPS_Listener_Configuration" path="${ux.sc.path}/*" doc:name="HTTPS" />
+        <apikit:router config-ref="ux-sc-order-config" doc:name="APIkit Router" />
+        <exception-strategy ref="ux-sc-order-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="ux-sc-order-console">
+       <http:listener config-ref="ux-sc-order-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="ux-sc-order-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="post:/order-compliance:ux-sc-order-config">
+         <flow-ref name="ux-sc-ordercompliance-process-flow" doc:name="ux-sc-ordercompliance-process-flow-ref" />
+    </flow>
+    <flow name="post:/order:ux-sc-order-config">
+       <flow-ref name="ux-sc-order-publisher-flow" doc:name="ux-sc-order-publisher-flow" />
+    </flow>
+    <flow name="post:/order/webhook:ux-sc-order-config">
+         <flow-ref name="ux-sc-order-publisher-flow" doc:name="ux-sc-order-publisher-flow" />
+    </flow>
+    <!--  -->
+    <flow name="ux-sc-order-publisher-flow">
+        <set-payload value="#[payload]" doc:name="Set Payload" />
+        <set-session-variable variableName="channel" value="#[message.inboundProperties.'http.query.params'.channel]" doc:name="Set channel-var" />
+        <set-session-variable variableName="warehouse" value="#[message.inboundProperties.'http.query.params'.warehouse]" doc:name="Set warehouse-var" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Map Object" />
+        <set-session-variable variableName="order" value="#[payload]" doc:name="Set orderDataPayload_variable" />
+        <expression-component doc:name="set flow name"><![CDATA[sessionVars.order.flowName='order']]></expression-component>
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+        <flow-ref name="mq-publisher-flow" doc:name="call to mq publisher flow-ref" />
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[exception.causedBy(org.mule.extension.validation.api.ValidationException) || exception.causedBy(java.text.ParseException)]" doc:name="Catch Exception Strategy" logException="false">
+                <set-payload value="#['REJECT']" doc:name="Set-Payload-Reject" />
+                <set-property propertyName="http.status" value="200" doc:name="Set-Status-200" />
+                <set-property propertyName="http.reason" value="Order Data missing field values." doc:name="Set Reason" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <sub-flow name="mq-publisher-flow">
+        <logger message="EComm Shopify ::: #[message.payload]" level="INFO" doc:name="Logger/ message from shopify" />
+        <amqp:outbound-endpoint responseTimeout="10000" exchange-pattern="request-response" exchangeDurable="true" doc:name="AMQP-0-9-shopify-sc-newOrder-publisher" exchangeType="fanout" connector-ref="AMQP_0_9_sc_Connector_getSalesOrder_Pub" queueDurable="true" ref="AMQP_0_9_sc-Connector-getSalesOrder" exchangeName="${mq.neworder.exchange}" />
+        <set-payload value="{&quot;message&quot;:&quot;Ack received from publisher.&quot;}" doc:name="Set-Payload-Ack-to-shopify" />
+    </sub-flow>
+    <flow name="ux-sc-mq-consumer-flow">
+        <amqp:inbound-endpoint queueName="${mq.neworder.queue}" exchangeType="fanout" queueDurable="true" exchangeDurable="true" responseTimeout="10000" connector-ref="AMQP_0_9_sc_Connector_getSalesOrder_Con" doc:name="AMQP-0-9-shopify-sc-newOrder-Consumer" exchange-pattern="request-response" ref="AMQP_0_9_sc-Connector-getSalesOrder" exchangeName="${mq.neworder.exchange}" />
+        <choice doc:name="Choice">
+            <when expression="#[sessionVars.order.flowName == 'order']">
+                <flow-ref name="ux-sc-order-consumer-flow" doc:name="call to sc order consumer flow ref" />
+            </when>
+            <otherwise>
+                <logger message="No Flow :: consumer is not invoking any flow" level="INFO" doc:name="No Flow Logger" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="ux-sc-order-consumer-flow">
+        <json:json-to-object-transformer returnClass="java.util.HashMap" mimeType="application/java" doc:name="convert the json value coming from mq consumer to object" />
+        <set-session-variable variableName="orderData" value="#[payload]" doc:name="set order data in session variable" />
+        <logger message="consumer value :: #[payload]" level="INFO" doc:name="writting log for consumer" />
+        <enricher source="#[payload]" target="#[payload]" doc:name="message enricher for  get sales order">
+            <flow-ref name="ux-sc-order-getSalesOrder-proxy-subflow" doc:name="ux-sc-order-getSalesOrder-proxy-subflow" />
+        </enricher>
+        <set-payload value="#[payload]" doc:name="Set getSalesOrder Payload" />
+        <enricher source="#[payload]" target="#[payload]" doc:name="message enricher for checkComplianceAndCommit sales order ">
+            <flow-ref name="new-order-check-flow" doc:name="new-order-check-flow" />
+        </enricher>
+        <invoke object-ref="invokeScAndShopifyResponseUx" method="getScCommitResponse" doc:name="Java: Invoke getScCommitResponse()" />
+        <logger message="Is MQ Ack [true] OR Reject [false]  :::: #[payload]" level="INFO" doc:name="writting log for compliance response " />
+        <choice doc:name="check the mq for reject or ack">
+            <when expression="#[payload == true]">
+                <amqp:acknowledge-message doc:name="AMQP-0-9 Acknowledge Message" />
+            </when>
+            <otherwise>
+                <amqp:reject-message doc:name="AMQP-0-9 Reject Message"/>
+
+            </otherwise>
+        </choice>
+        <invoke object-ref="invokeScAndShopifyResponseUx" method="setScCommitResponse" methodArguments="false" methodArgumentTypes="boolean" doc:name="Invoke" />
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy doc:name="Catch Exception Strategy" logException="false">
+                <logger message="Issues In new order consumer flow :: #[payload]" level="ERROR" doc:name="Logger/Issues In consumer flow " />
+                <invoke object-ref="invokeScAndShopifyResponseUx" method="setScCommitResponse" methodArguments="false" methodArgumentTypes="boolean" doc:name="Invoke" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <sub-flow name="ux-sc-order-getSalesOrder-proxy-subflow">
+        <http:request config-ref="HTTPS_Outbound_Configuration" path="${sys.sc.path}/getSalesOrder" method="GET" doc:name="/call to sys">
+            <http:request-builder>
+                <http:query-param paramName="key" value="#[payload.name]" />
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="200..500" />
+        </http:request>
+    </sub-flow>
+    <flow name="new-order-check-flow">
+        <byte-array-to-object-transformer doc:name="Byte Array to Object" />
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Object" />
+        <choice doc:name="is-new-order-Choice">
+            <when expression="#[payload.GetSalesOrderResponse.GetSalesOrderResult.ResponseStatus == 'Failure']">
+                <set-payload value="#[sessionVars.orderData]" doc:name="Set Order Payload" />
+                <flow-ref name="validate-ux-order-flow" doc:name="validate-ux-order-flow" />
+                <choice doc:name="Choice">
+                    <when expression="#[flowVars.isDateValid==true]">
+                        <flow-ref name="set-shipDate-variables-subflow" doc:name="set-shipDate-variables-subflow" />
+                        <flow-ref name="set-shippingTax-variables-flow" doc:name="set-shippingTax-variables-flow" />
+                        <logger message="Before proc call===&gt; #[payload]" level="INFO" doc:name="Logger/log-payload-before-proc-call" />
+                        <expression-component doc:name="Set API_key-Password-shipBirthdate-billBirthDate"><![CDATA[sessionVars.orderData.api_key="API_key";
+sessionVars.orderData.password="API_password";
+sessionVars.orderData.channel=sessionVars.channel;
+sessionVars.orderData.warehouse=sessionVars.warehouse;
+sessionVars.orderData.shipBirthDate=flowVars.shipBirthDate;
+sessionVars.orderData.billBirthDate=flowVars.billBirthDate;
+sessionVars.orderData.shipDate=flowVars.shipDate;
+sessionVars.orderData.taxPaid = sessionVars.taxPaid;
+sessionVars.orderData.shippingPaid = sessionVars.shippingPaid;
+sessionVars.orderData.shippingCode = flowVars.shippingService;]]></expression-component>
+                        <set-payload value="#[sessionVars.orderData]" doc:name="Set Order Payload" />
+                        <json:object-to-json-transformer doc:name="Object to JSON" />
+                        <http:request config-ref="HTTPS_Outbound_Configuration" path="/proc/ecomm/sc/order" method="POST" doc:name="/call to proc">
+                            <http:request-builder>
+                                <http:query-param paramName="channel" value="#[sessionVars.channel]" />
+                                <http:query-param paramName="warehouse" value="#[sessionVars.warehouse]" />
+                                <http:header headerName="Content-Type" value="application/json" />
+                            </http:request-builder>
+                            <http:success-status-code-validator values="200..500" />
+                        </http:request>
+                    </when>
+                    <otherwise>
+                        <logger message="Validation Error" level="ERROR" doc:name="Logger" />
+                    </otherwise>
+                </choice>
+                <!--                 <flow-ref name="post:/order:proc-prna-config" doc:name="post:/order:proc-prna-config"/> -->
+            </when>
+            <otherwise>
+                <logger message="TODO ::::- Order Exists - Update Flow ::  #[sessionVars.orderData]" level="INFO" doc:name="Logger/ Existing Order Info log" />
+            </otherwise>
+        </choice>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[exception.causedBy(org.mule.extension.validation.api.ValidationException) || exception.causedBy(java.text.ParseException)]" doc:name="Catch Exception Strategy" logException="false">
+                <logger message="Validation Error :::  #[exception.getMessage()]" level="ERROR" doc:name="Logger/log-Order-Data-missing-field-values" />
+                <invoke object-ref="invokeScAndShopifyResponseUx" method="setScCommitResponse" methodArguments="false" methodArgumentTypes="boolean" doc:name="Invoke" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <sub-flow name="validate-ux-order-flow">
+        <validation:is-not-empty config-ref="Validation_Configuration" message="Failed to commit order due to Order Name :: {#[sessionVars.orderData] :: #[sessionVars.orderData.name]}" value="#[sessionVars.orderData.name]" doc:name="validate-order-name-isNotEmpty" />
+        <choice doc:name="validate-order-id-isNotEmpty">
+            <when expression="#[sessionVars.orderData.id == empty]">
+                <logger message="Order ID missing on order while committing order. ==&gt; #[sessionVars.orderData]" level="WARN" doc:name="Logger/missing Order id" />
+            </when>
+            <otherwise>
+                <logger message="Order Id is present :::  #[sessionVars.orderData.id]" level="INFO" doc:name="Logger/Order id present" />
+            </otherwise>
+        </choice>
+        <flow-ref name="set-billBirthDate-variable-subflow" doc:name="set-billBirthDate-variable-subflow" />
+        <flow-ref name="set-shipBirthDate-variable-subflow" doc:name="set-shipBirthDate-variable-subflow" />
+        <choice doc:name="bill birthdate checking">
+            <when expression="#[sessionVars.billBirthDate != null &amp;&amp; sessionVars.billBirthDate.toString() != &quot;&quot;]">
+                <choice doc:name="ship birth date checking">
+                    <when expression="#[sessionVars.shipBirthDate!=null &amp;&amp; sessionVars.shipBirthDate.toString() !=&quot;&quot;]">
+                        <set-variable variableName="isDateValid" value="true" doc:name="Is date valid variable" />
+                    </when>
+                    <otherwise>
+                        <set-variable variableName="isDateValid" value="false" doc:name="Is date valid variable" />
+                        <logger message="Ship Birthdate is missing" level="ERROR" doc:name="Logger" />
+                    </otherwise>
+                </choice>
+            </when>
+            <otherwise>
+                <set-variable variableName="isDateValid" value="false" doc:name="Is date valid variable" />
+                <logger message="Bill Birthdate is missing" level="ERROR" doc:name="Logger" />
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="set-billBirthDate-variable-subflow">
+        <set-session-variable variableName="billBirthDate" value="" doc:name="set-init-billBirthDate-variable" />
+        <foreach collection="#[sessionVars.orderData.customer.metafields]" doc:name="For Each customer metafield">
+            <expression-component doc:name="Expression-set-billBirthDate"><![CDATA[import org.apache.commons.lang3.StringUtils;
+
+//String pattern = "dd-MM-yyyy";    
+
+if(payload.key == 'birthdate') {
+    if(StringUtils.isNotBlank(payload.value)) {
+        org.mule.el.datetime.DateTime bill_birth_date = new org.mule.el.datetime.DateTime(payload.value,'dd-MM-yyyy');
+        sessionVars.billBirthDate = bill_birth_date;
+    }
+}]]></expression-component>
+        </foreach>
+        <set-variable variableName="billBirthDate" value="&quot;#[sessionVars.billBirthDate]&quot;" doc:name="set-billBirthDate-variable" />
+    </sub-flow>
+    <sub-flow name="set-shipBirthDate-variable-subflow">
+        <set-session-variable variableName="shipBirthDate" value="" doc:name="set-init-shipBirthDate-var" />
+        <foreach collection="#[sessionVars.orderData.customer.metafields]" doc:name="For Each customer metafield">
+            <expression-component doc:name="Expression-set-shipBirthDate"><![CDATA[import org.apache.commons.lang3.StringUtils;
+
+//String pattern = "dd-MM-yyyy";    
+
+if(payload.key == 'ship_birthdate') {
+    if(StringUtils.isNotBlank(payload.value)) {
+        org.mule.el.datetime.DateTime ship_birth_date = new org.mule.el.datetime.DateTime(payload.value,'dd-MM-yyyy');
+        sessionVars.shipBirthDate = ship_birth_date;
+    }
+}]]></expression-component>
+        </foreach>
+        <set-variable variableName="shipBirthDate" value="&quot;#[sessionVars.shipBirthDate]&quot;" doc:name="set-shipBirthDate-variable" />
+    </sub-flow>
+    <sub-flow name="set-shipDate-variables-subflow">
+        <expression-component doc:name="Expression-set-init-shipDate"><![CDATA[import new org.mule.el.datetime.*;
+//yyyy-MM-dd
+
+org.mule.el.datetime.DateTime shipDate = new org.mule.el.datetime.DateTime(new Date());
+shipDate.plusDays(1);
+if(shipDate.getDayOfWeek()==0 || shipDate.getDayOfWeek()==7) {
+    shipDate.plusDays(2);
+} else if(shipDate.getDayOfWeek()==1){
+    shipDate.plusDays(1);
+}
+
+org.mule.el.datetime.DateTime ship_Date = new org.mule.el.datetime.DateTime(shipDate, 'yyyy-MM-dd');
+sessionVars.shipDate = ship_Date;]]></expression-component>
+        <foreach collection="#[sessionVars.orderData.note_attributes]" doc:name="For Each note_attribute">
+            <expression-component doc:name="Expression-set-shipDate"><![CDATA[import org.apache.commons.lang3.StringUtils;
+//String pattern = "yyyy-MM-dd";    
+if( payload.name == 'date') {
+    if(StringUtils.isNotBlank(payload.value)) {
+        org.mule.el.datetime.DateTime ship_Date = new org.mule.el.datetime.DateTime(payload.value, 'yyyy-MM-dd');
+        sessionVars.shipDate = ship_Date;
+    }
+}]]></expression-component>
+        </foreach>
+        <set-variable variableName="shipDate" value="&quot;#[sessionVars.shipDate]&quot;" doc:name="set-shipDate-variable" />
+    </sub-flow>
+    <flow name="set-shippingTax-variables-flow">
+        <logger message=":::::Shipping_lines::::: #[sessionVars.orderData.shipping_lines]" level="INFO" doc:name="Logger/log orderDate.shipping_lines" />
+        <set-session-variable variableName="shippingCode" value="" doc:name="Set-init-shippingCode_variable" />
+        <set-session-variable variableName="shippingPaid" value="" doc:name="Set shippingPaid_variable" />
+        <set-session-variable variableName="taxPaid" value="" doc:name="Set taxPaid_variable" />
+        <choice doc:name="Choice shipping_lines &gt;0">
+            <when expression="#[sessionVars.orderData.shipping_lines.size()&gt;0]">
+                <set-variable variableName="totalMethod" value="#[Float.parseFloat(&quot;0.0&quot;)]" doc:name="Set-init-totalMethod_variable" />
+                <foreach collection="#[sessionVars.orderData.shipping_lines]" doc:name="For Each shipping_line">
+                    <expression-component doc:name="Expression-set-totalMethod"><![CDATA[flowVars.totalMethod += Float.parseFloat(payload.price)]]></expression-component>
+                </foreach>
+                <set-variable variableName="shippingLine" value="#[sessionVars.orderData.shipping_lines[sessionVars.orderData.shipping_lines.size() - 1]]" doc:name="Set shippingLine_variable" />
+                <set-variable variableName="provinceArray" value="#[{'MA','VA'}]" doc:name="Set Province Array_variable" />
+                <set-variable variableName="shippingService" value="#[(flowVars['provinceArray'] contains sessionVars.orderData.shipping_address.province_code) ? 'FXG' : 'UPS']" doc:name="Set shippingService_variable" />
+                <logger message="******* shippingService ::::::: #[flowVars.shippingService]" level="INFO" doc:name="Logger/log-shipping_service" />
+                <expression-component doc:name="Expression-set-values"><![CDATA[sessionVars.shippingCode = flowVars.shippingService;
+sessionVars.shippingPaid = flowVars.totalMethod;
+sessionVars.taxPaid = Float.parseFloat(sessionVars.orderData.total_tax);]]></expression-component>
+            </when>
+            <otherwise>
+                <expression-component doc:name="Expression-set-default-values"><![CDATA[sessionVars.shippingCode = '';
+sessionVars.shippingPaid = 0.00;
+sessionVars.taxPaid = 0.00;]]></expression-component>
+            </otherwise>
+        </choice>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy doc:name="Catch Exception Strategy" logException="false">
+                <logger message="Issues In Tax computation for new order :: #[payload]" level="ERROR" doc:name="Logger/log-Issues-In-Tax-computation" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="ux-sc-ordercompliance-process-flow">
+        <set-payload value="#[payload]" mimeType="application/json" doc:name="Set Payload" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Object" />
+        <logger message="Order Compliance API call ===&gt; ['Order' =&gt; #[payload]]" level="INFO" doc:name="Logger" />
+        <set-session-variable variableName="orderCompOrderData" value="#[payload]" doc:name="set-orderCompOrderData" />
+        <flow-ref name="validate-ux-orderCompliance-sub-flow" doc:name="validate-ux-orderCompliance-sub-flow-ref" />
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.errors.size() &gt; 0]">
+                <set-payload value="{
+	&quot;errors&quot; : #[flowVars.errors]
+}" doc:name="Set Payload" mimeType="application/json"/>
+                <logger message="order compliance request errors :: #[payload]" level="INFO" doc:name="order compliance request error"/>
+                <set-property propertyName="http.status" value="400" doc:name="Set_Error_HTTP_Status" />
+            </when>
+            <otherwise>
+                <set-session-variable variableName="channel" value="#[message.inboundProperties.'http.query.params'.channel]" doc:name="Session Variable" />
+                <expression-component doc:name="Expression-set-shopify-meta-billToDOB-format"><![CDATA[org.mule.el.datetime.DateTime billToDOBirth = new org.mule.el.datetime.DateTime(sessionVars.orderCompOrderData.BillTo.DateOfBirth, 'yyyy-MM-dd');
+flowVars.billToDOB = billToDOBirth.format('dd-MM-yyyy');]]></expression-component>
+                <set-payload value="{  &quot;namespace&quot;:&quot;customer&quot;,  &quot;resource_type&quot;:&quot;customers&quot;,  &quot;resource_id&quot;: &quot;#[sessionVars.orderCompOrderData.CustomerKey]&quot;,  &quot;field_name&quot;:&quot;birthdate&quot;,  &quot;type&quot;:&quot;string&quot;,  &quot;value&quot;: &quot;#[flowVars.billToDOB] &quot; }" mimeType="application/json" doc:name="Set-update-shopify-billDOB-meta-Payload" />
+                <flow-ref name="ux-sc-orderComp-update-shopify-meta-Flow" doc:name="ux-sc-orderComp-update-shopify-meta-Flow-ref" />
+                <expression-component doc:name="Expression-set-shopify-meta-shipDOB-format"><![CDATA[if (sessionVars.orderCompOrderData.Shipments.size() > 0) {
+	org.mule.el.datetime.DateTime shipDOBirth = new org.mule.el.datetime.DateTime(sessionVars.orderCompOrderData.Shipments.get(sessionVars.orderCompOrderData.Shipments.size() - 1).ShipTo.DateOfBirth,, 'yyyy-MM-dd');
+	flowVars.shipDOB = shipDOBirth.format('dd-MM-yyyy');
+}]]></expression-component>
+                <set-payload value="{  &quot;namespace&quot;:&quot;customer&quot;,  &quot;resource_type&quot;:&quot;customers&quot;,  &quot;resource_id&quot;: &quot;#[sessionVars.orderCompOrderData.CustomerKey]&quot;,  &quot;field_name&quot;:&quot;ship_birthdate&quot;,  &quot;type&quot;:&quot;string&quot;,  &quot;value&quot;: &quot;#[flowVars.shipDOB]&quot; }" mimeType="application/json" doc:name="Set-update-shopify-shipDOB-meta-Payload" />
+                <flow-ref name="ux-sc-orderComp-update-shopify-meta-Flow" doc:name="ux-sc-orderComp-update-shopify-meta-Flow-ref" />
+                <set-payload value="#[sessionVars.orderCompOrderData]" doc:name="Set Payload -ChechComplianceSalesOrder" />
+                <json:object-to-json-transformer doc:name="Object to JSON" />
+                <flow-ref name="ux-sc-orderComp-checkComplianceOfSalesOrder-Flow" doc:name="ux-sc-orderComp-ChechComplianceSalesOrder-Flow-ref" />
+            </otherwise>
+        </choice>
+    </flow>
+    <sub-flow name="validate-ux-orderCompliance-sub-flow">
+        <set-variable variableName="errors" value="#[[]]" doc:name="set-init-errors-arrray-var" />
+        <expression-component doc:name="Expression-getPurchaseDate"><![CDATA[//String pattern = "dd-MM-yyyy";    
+org.mule.el.datetime.DateTime orderCompPurchaseDate = null;
+
+if(payload.PurchaseDate != null && payload.PurchaseDate != "") {
+	orderCompPurchaseDate = new org.mule.el.datetime.DateTime(payload.PurchaseDate);
+} 
+
+if(orderCompPurchaseDate == null || orderCompPurchaseDate == "") {
+	flowVars.errors.add('"'+"Purchase date is invalid"+'"');
+}]]></expression-component>
+        <set-session-variable variableName="shipments" value="#[payload.Shipments != null ? payload.Shipments : null]" doc:name="set-shipmentsArray-var" />
+        <flow-ref name="validate-ux-orderCompliance-shipmentsArray-sub-flow" doc:name="validate-ux-orderCompliance-shipmentsArray-sub-flow-ref" />
+        <flow-ref name="validate-ux-orderCompliance-billTo-sub-flow" doc:name="validate-ux-orderCompliance-billTo-sub-flow-ref" />
+    </sub-flow>
+    <sub-flow name="validate-ux-orderCompliance-shipmentsArray-sub-flow">
+        <choice doc:name="Choice">
+            <when expression="#[sessionVars.shipments.size() &gt; 0]">
+                <foreach collection="#[sessionVars.shipments]" doc:name="For Each">
+                    <logger message="Validating shipment ::::: =&gt; #[payload]" level="INFO" doc:name="Logger/Validating-shipment " />
+                    <expression-component doc:name="Expression-validate-ShipmentDetails"><![CDATA[//Validate ShipDate
+//String pattern = "yyyy-MM-dd";    
+flowVars.orderCompShipDate = null;
+if( payload.ShipDate != null && payload.ShipDate != "") {
+   flowVars.orderCompShipDate = new org.mule.el.datetime.DateTime(payload.ShipDate);
+}
+
+if(flowVars.orderCompShipDate == null) {
+	flowVars.errors.add('"'+"Ship date is invalid."+'"');
+}
+
+//Validate Insured amount
+if(!(payload.InsuredAmount != null && payload.InsuredAmount.toString().matches("^[0-9]+$"))) {
+	flowVars.errors.add('"'+"Insured amount must be numeric."+'"');
+} 
+
+
+//Validate ShipTo
+flowVars.orderCompShipDOB = null;
+
+if(payload.ShipTo != null) {
+	if((payload.ShipTo.DateOfBirth != null && payload.ShipTo.DateOfBirth != "")) {
+		flowVars.orderCompShipDOB = new org.mule.el.datetime.DateTime(payload.ShipTo.DateOfBirth);
+	}
+
+	if(flowVars.orderCompShipDOB == null) {
+		flowVars.errors.add('"'+"ShipTo date of birth is invalid."+'"');
+	}
+} else {
+	flowVars.errors.add('"'+"ShipTo address is missing."+'"');
+}]]></expression-component>
+                    <choice doc:name="Choice">
+                        <when expression="#[payload.LineItems != null &amp;&amp; payload.LineItems.size() &gt; 0]">
+                            <foreach collection="payload.LineItems" doc:name="For Each">
+                                <expression-component doc:name="Expression-validate-lineItems"><![CDATA[if(!(payload.Quantity != null && payload.Quantity.toString().matches("^[0-9]+$"))) {
+ 	flowVars.errors.add('"'+"Line items require a numeric quantity."+'"');
+} 
+
+if(!(payload.UnitPrice != null && payload.UnitPrice.matches("-?\\d+(\\.\\d+)?"))) {
+ 	flowVars.errors.add('"'+"Line items require a numeric unit price."+'"');
+}]]></expression-component>
+                            </foreach>
+                        </when>
+                        <otherwise>
+                            <expression-component doc:name="Expression-validate-lineItems-count"><![CDATA[flowVars.errors.add("Shipment contains no line items.");]]></expression-component>
+                        </otherwise>
+                    </choice>
+                </foreach>
+            </when>
+            <otherwise>
+                <expression-component doc:name="Expression-shipments-isArray"><![CDATA[flowVars.errors.add('"'+'Order contains no shipments'+'"');]]></expression-component>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="validate-ux-orderCompliance-billTo-sub-flow">
+        <expression-component doc:name="Expression-validate-billTo"><![CDATA[flowVars.orderCompBillToDateOfBirth = null;
+if(payload.BillTo != null) {
+	if(payload.BillTo.DateOfBirth != null && payload.BillTo.DateOfBirth  != "") {
+		flowVars.orderCompBillToDateOfBirth  = new org.mule.el.datetime.DateTime(payload.BillTo.DateOfBirth);
+	}
+
+	if(flowVars.orderCompBillToDateOfBirth == null) {
+		flowVars.errors.add('"'+"BillTo date of birth is invalid."+'"');
+	}
+} else {
+	flowVars.errors.add('"'+"BillTo address is missing."+'"');
+}]]></expression-component>
+    </sub-flow>
+    <sub-flow name="ux-sc-orderComp-update-shopify-meta-Flow">
+        <http:request config-ref="HTTPS_Outbound_Configuration" path="${sys.sc.path}/modifyShopifyMetafield" method="POST" doc:name="/call to sys shopify modify metafield">
+            <http:request-builder>
+                <http:query-param paramName="channel" value="#[sessionVars.channel]" />
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="200..500" />
+        </http:request>
+    </sub-flow>
+    <sub-flow name="ux-sc-orderComp-checkComplianceOfSalesOrder-Flow">
+        <http:request config-ref="HTTPS_Outbound_Configuration" path="${sys.sc.path}/checkComplianceOfSalesOrder" method="POST" doc:name="/call to system ChechComplianceSalesOrder">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="convert json response to object"/>
+         <choice doc:name="checking response error from check compliance of sales order">
+            <when expression="#[payload.error == true ]">
+                <set-payload value="{  &quot;errors&quot; :  &quot;Remote error calling ShipCompliant API.&quot; }" mimeType="application/json" doc:name="return payload"/>
+                <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            </when>
+            <otherwise>
+                <logger message="No Error" level="INFO" doc:name="Logger"/>
+                <json:object-to-json-transformer doc:name="convert object to json"/>
+                <set-payload value="#[payload]" mimeType="application/json" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+  
+    <apikit:mapping-exception-strategy name="ux-sc-order-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ldap="http://www.mulesoft.org/schema/mule/ldap"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ldap http://www.mulesoft.org/schema/mule/ldap/current/mule-ldap.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+
+    <apikit:config name="Router" raml="proc/proc-nft.raml" consoleEnabled="true" consolePath="console" doc:name="Router" />
+    <flow name="api-proc-nft">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="${nft.proc}/v1/*" doc:name="/proc" />
+        <apikit:router config-ref="Router" doc:name="APIkit Router" />
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+        <flow name="get:/getAppMetaData:Router">
+        <flow-ref name="procRemoteProxyFlow" doc:name="procRemoteProxyFlow" />
+    </flow>
+    <flow name="get:/{generic}:Router">       
+        <flow-ref name="procRemoteProxyFlow" doc:name="procRemoteProxyFlow" />
+    </flow>
+    <flow name="post:/{generic}:Router">
+        <flow-ref name="procRemoteProxyFlow" doc:name="procRemoteProxyFlow" />
+    </flow>
+        <flow name="post:/login/auth:application/json:Router">
+        <flow-ref name="procRemoteProxyFlow" doc:name="procRemoteProxyFlow"/>
+    </flow>
+    <flow name="get:/getPlacesBrands:Router">
+        <flow-ref name="transformbase64Flow" doc:name="transformbase64"/>
+        <flow-ref name="securityFlow" doc:name="securityFlow"/>
+        <validation:is-true expression="#[payload.authentication]" doc:name="Validation"/>
+        <flow-ref name="getplacesbrandsFlow" doc:name="getplacesbrandsFlow"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[payload.authentication==false]" doc:name="Catch Exception Strategy">
+                <logger message="#['Authentication Failed']" level="INFO" doc:name="Logger"/>
+                <set-payload value="#['Authentication Failed']" doc:name="Error"/>
+                <set-property propertyName="http.status" value="401" doc:name="httpStatus"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="get:/getPlacesOutletGroups:Router">
+        <flow-ref name="procRemoteProxyFlow" doc:name="procRemoteProxyFlow" />
+    </flow>
+    <flow name="post:/getPlacesOutlets:application/json:Router">
+        <flow-ref name="procRemoteProxyFlow" doc:name="procRemoteProxyFlow" />
+    </flow>
+     <flow name="post:/getPlaces/moreInfo:Router">
+       <validation:is-not-null value="#[payload]" doc:name="Validation"/>
+        <flow-ref name="getPlaceID" doc:name="getPlaceID"/>
+        <scatter-gather doc:name="Scatter-Gather">
+            <flow-ref name="getPlaceDetails" doc:name="getPlaceDetails"/>
+            <choice doc:name="Choice">
+                <when expression="#[flowVars.photoRef!=null]">
+                    <flow-ref name="getPlacePhoto" doc:name="getPlacePhoto"/>
+                </when>
+                <otherwise>
+                    <set-payload value="#[['photo_ref':null]]" doc:name="Set Payload"/>
+                </otherwise>
+            </choice>
+        </scatter-gather>
+        <dw:transform-message doc:name="Java to JSON">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[payload==null]" doc:name="If payload is null">
+                <set-payload value="#['No Data Received']" doc:name="Set Payload"/>
+                <set-property propertyName="http.status" value="400" doc:name="Property"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+     <flow name="options:/getPlaces/moreInfo:Router">
+        <set-payload value="#[{&quot;Message&quot;:&quot;Success&quot;}]" doc:name="Set Payload"/>
+    </flow>
+    <sub-flow name="procRemoteProxyFlow">
+        <set-variable variableName="reqURI" value="#[message.inboundProperties.'http.request.uri']" doc:name="Request URI"/>
+    <set-variable variableName="serviceURIVersion" value="#[flowVars.reqURI.replace('${nft.proc}','${nft.service}')]" doc:name="Service URI with V1"/>
+        <set-variable variableName="serviceURI" value="#[flowVars.serviceURIVersion.replace(&quot;/v1&quot;,&quot;&quot;)]" doc:name="serviceURI"/>
+        <logger message="Outbound Query for Service uri: #[flowVars.serviceURI]" level="INFO" doc:name="Outbound Query"/>
+        <copy-properties propertyName="*" doc:name="In to Out"/>
+        <http:request config-ref="Grails_Request_Configuration" path="#[flowVars.serviceURI]" method="#[message.inboundProperties.'http.method']" doc:name="/needfulThingsServices/api"/>
+    </sub-flow>
+    <flow name="getPlaceID">
+        <set-variable variableName="radius" value="#[message.inboundProperties.'http.query.params'.rad==null?'500':message.inboundProperties.'http.query.params'.rad]" doc:name="Radius"/>
+        <dw:transform-message doc:name="JSON to Java">
+            <dw:input-payload doc:sample="json_1.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="location"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.lat as :number as :string ++ "," ++ payload.lng as :number as :string]]></dw:set-variable>
+            <dw:set-variable variableName="outletName"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.outletName]]></dw:set-variable>
+            <dw:set-variable variableName="language"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.language]]></dw:set-variable>
+        </dw:transform-message>
+        <set-variable variableName="requestURI" value="#['/nearbysearch/json?location='+flowVars.location+'&amp;radius='+flowVars.radius+'&amp;name='+flowVars.outletName+'&amp;key=${api.key}']" doc:name="requestURI"/>
+        <http:request config-ref="GetPlaceDetails" path="#[flowVars.requestURI]" method="GET" doc:name="/nearbysearch"/>
+        <dw:transform-message doc:name="Set placeID &amp; photoRef">
+            <dw:input-payload doc:sample="json_2.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="placeId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.results[0].place_id]]></dw:set-variable>
+            <dw:set-variable variableName="photoRef"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.results[0].photos[0].photo_reference]]></dw:set-variable>
+        </dw:transform-message>
+
+
+    </flow>
+    <flow name="getPlaceDetails">
+        <validation:is-not-null value="#[flowVars.placeId]" doc:name="placeID!=null"/>
+        <set-variable variableName="requestURI" value="#['/details/json?placeid='+flowVars.placeId+'&amp;language='+flowVars.language+'&amp;key=${api.key}']" doc:name="placeDetailsrequestURI"/>
+        <http:request config-ref="GetPlaceDetails" path="#[flowVars.requestURI]" method="GET" doc:name="/details"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[flowVars.placeId==null]" doc:name="Catch Exception Strategy">
+                <logger message="#['Failed to retreive Place Details']" level="ERROR" doc:name="Logger"/>
+                <set-payload value="#[['results':null]]" doc:name="Set Null Results"/>
+            </catch-exception-strategy>
+ 		</choice-exception-strategy>
+    </flow>
+    <flow name="getPlacePhoto">
+        <validation:is-not-null value="#[flowVars.photoRef]" doc:name="photoRef!=null"/>
+        <set-variable variableName="placesphotoURI" value="#['/photo?maxwidth=400&amp;photoreference='+flowVars.photoRef+'&amp;key=${api.key}']" doc:name="placesphotoURI"/>
+        <http:request config-ref="GetPlaceDetails" path="#[flowVars.placesphotoURI]" method="GET" doc:name="/photo"/>
+        <base64-encoder-transformer doc:name="Encode image to Base64" />
+        <dw:transform-message doc:name="String to Map">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+"photo_ref":payload]]></dw:set-payload>
+        </dw:transform-message>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="#[['photo_ref':null]]" doc:name="Set Null Photo"/>
+        </catch-exception-strategy>
+    </flow>
+     <flow name="transformbase64Flow">
+        <set-payload value="#[message.inboundProperties.authorization.split(' ')[1]]" doc:name="Base64 Encoded "/>      
+         <base64-decoder-transformer doc:name="Base64 Decoder" />
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <set-variable variableName="username" value="#[payload.split(':')[0]]" doc:name="Username"/>
+        <set-variable variableName="password" value="#[payload.split(':')[1]]" doc:name="Password"/>
+        <set-payload value="#[null]" doc:name="Set Payload"/>
+    </flow>
+     <flow name="getplacesbrandsFlow">
+        <set-variable variableName="location" value="#[message.inboundProperties.'http.query.params'.loc]" doc:name="Set Location"/>
+        <choice doc:name="Location?">
+            <when expression="#[flowVars.location==&quot;CAN&quot;]">
+                <db:stored-procedure config-ref="App_DB_Configuration" doc:name="getCorbyBrands">
+                    <db:parameterized-query><![CDATA[{call PANTHER.NT_SERVICES.GET_CORBY_BRANDS(:resultSet)}]]></db:parameterized-query>
+                    <db:out-param name="resultSet" type="CURSOR"/>
+
+                </db:stored-procedure>             
+            </when>
+            <when expression="#[flowVars.location==&quot;US&quot;]">
+                <db:stored-procedure config-ref="App_DB_Configuration" doc:name="getUSBrands">
+                    <db:parameterized-query><![CDATA[{call PANTHER.NT_SERVICES.GET_US_BRANDS(:resultSet)}]]></db:parameterized-query>
+                    <db:out-param name="resultSet" type="CURSOR"/>
+
+                </db:stored-procedure>
+            </when>
+            <otherwise>
+                <logger message="&quot;Location Not Found&quot;" level="ERROR" doc:name="Location Not Found"/>
+            </otherwise>
+        </choice>
+        <set-payload value="#[payload.resultSet]" doc:name="Set Result"/>
+        <json:object-to-json-transformer doc:name="Result to JSON"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="400" doc:name="httpStatus"/>
+            <set-variable variableName="error_msg" value="#['Location not found']" doc:name="Error"/>
+            <flow-ref name="NotifyUsersFromCloudhub" doc:name="NotifyUsers"/>
+        </catch-exception-strategy>
+    </flow>
+
+     <!-- General Exception Strategy -->
+    <apikit:mapping-exception-strategy name="api-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="ContentType" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="ExceptionMessage" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="ContentType" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="ExceptionMessage" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="ContentType" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="ExceptionMessage" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="ContentType" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="ExceptionMessage" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="ContentType" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="ExceptionMessage" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

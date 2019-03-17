@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<apikit:config name="prna-ecomm-products-api-config"
+		raml="prna-ecomm-products-api.raml" consoleEnabled="false" doc:name="Router"
+		keepRamlBaseUri="false" />
+	<http:request-config name="API_Request_Configuration"
+		protocol="HTTPS" host="#[flowVars.RetailerApiMapping[0].api_url]"
+		port="${map.googleapi.port}" basePath="/#[flowVars.RetailerApiMapping[0].api_basepath]"
+		doc:name="HTTP Request Configuration" />
+	<validation:config name="Validation_Configuration"
+		doc:name="Validation Configuration" />
+    <spring:beans>
+        <spring:bean id="Bean" name="invokeLCBOData" class="coreapi.LCBOData"/>
+    </spring:beans>
+	<flow name="prna-ecomm-products-api-main">
+		<http:listener config-ref="HTTPS_Listener_Configuration"
+			path="/api/*" doc:name="HTTPS" />
+		<apikit:router config-ref="prna-ecomm-products-api-config"
+			doc:name="APIkit Router" />
+		<exception-strategy
+			ref="prna-ecomm-products-api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+	</flow>
+	<flow name="get:/ecomm/{retailer}/brands:prna-ecomm-products-api-config">
+		<flow-ref name="Ecommapi:SecurityFlow" doc:name="Ecommapi:SecurityFlow" />
+		<validation:all config-ref="Validation_Configuration"
+			 doc:name="Validate: Authorization &amp; Role" >
+            <validation:validations>
+                <validation:is-true expression="#[flowVars.EcommAPIAuthentication]"/>
+                <validation:matches-regex value="#[message.payload[0].ROLENAME]" regex="ECOMMAPI_USER"/>
+            </validation:validations>
+        </validation:all>
+		<logger
+			message="Ecomm-Product: Getting Brands for retailer - #[message.inboundProperties.'http.uri.params'.retailer]"
+			level="INFO" doc:name="Log-INFO: RetailerData" />
+		<http:request config-ref="PIM_HTTPS_Request_Configuration"
+			path="/" method="GET" doc:name="HTTPS: GetBrandsFromPIM">
+			<http:request-builder>
+				<http:query-param paramName="retailerId"
+					value="#[message.inboundProperties.'http.uri.params'.retailer]" />
+				<http:header headerName="api_key" value="${pim.api.key}" />
+			</http:request-builder>
+		</http:request>
+		<dw:transform-message doc:name="DW: Extract Brand labels to Payload">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+//pluck $$ get all keys and pluck $ get all values
+"brandLabel":payload.facets."brand.label" pluck $$ when payload.facets."brand.label" != null
+				otherwise "No brand Labels found"
+	
+	]]></dw:set-payload>
+		</dw:transform-message>
+		<choice-exception-strategy doc:name="UnauthenticatedAccessExceptions">
+			<catch-exception-strategy when="#[flowVars.EcommAPIAuthentication==false]"
+				doc:name="Catch Exception Strategy">
+				<set-property propertyName="Content-type" value="application/json"
+					mimeType="application/java" doc:name="Property: Content-type" />
+				<set-property propertyName="http.status" value="401"
+					doc:name="Property: http.status" />
+				<set-payload value="{ &quot;message&quot;: &quot;Unauthorized Access&quot; }"
+					mimeType="application/json" doc:name="Set Error Payload" />
+			</catch-exception-strategy>
+            <catch-exception-strategy when="#[message.payload[0].ROLENAME!='ECOMMAPI_USER']" enableNotifications="false" logException="false" doc:name="Catch Invalid Role">
+                <set-property propertyName="Content-type" value="application/json" mimeType="application/java" doc:name="Property: Content-type"/>
+                <set-property propertyName="http.status" value="403" doc:name="Property: http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;Access Denied&quot; }" mimeType="application/json" doc:name="Set Error Payload"/>
+            </catch-exception-strategy>
+		</choice-exception-strategy>
+	</flow>
+	<flow name="get:/ecomm/{retailer}/products:prna-ecomm-products-api-config">
+		<flow-ref name="Ecommapi:SecurityFlow" doc:name="Ecommapi:SecurityFlow" />
+		<validation:all config-ref="Validation_Configuration"
+			 doc:name="Validate: Authorization &amp; Role" >
+            <validation:validations>
+                <validation:is-true expression="#[flowVars.EcommAPIAuthentication]"/>
+                <validation:matches-regex value="#[message.payload[0].ROLENAME]" regex="ECOMMAPI_USER"/>
+            </validation:validations>
+        </validation:all>
+		<logger
+			message="Ecomm-Product: Getting Products for retailer - #[message.inboundProperties.'http.uri.params'.retailer] and brand label - #[message.inboundProperties.'http.query.params'.brandLabel] and ignorePrice = #[message.inboundProperties.'http.query.params'.ignorePrice]"
+			level="INFO" doc:name="Log-INFO: Retailer and Brand" />
+        <set-variable variableName="ignorePrice" value="#[message.inboundProperties.'http.query.params'.ignorePrice]" mimeType="application/java" doc:name="FlowVars: ignorePrice"/>
+		<set-variable variableName="productList" value="#[[]]"
+			mimeType="application/java" doc:name="FlowVars: productList" />
+		<http:request config-ref="PIM_HTTPS_Request_Configuration"
+			path="/browse" method="GET" doc:name="HTTPS: GetProductsFromPIM">
+			<http:request-builder>
+				<http:query-param paramName="retailerId" value="#[flowVars.retailer]" />
+				<http:query-param paramName="pageLength" value="1000" />
+				<http:query-params
+					expression="#[message.inboundProperties.'http.query.params']" />
+				<http:header headerName="api_key" value="${pim.api.key}" />
+			</http:request-builder>
+		</http:request>
+		<dw:transform-message doc:name="DW: Get Cursor and Payload">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+			<dw:set-variable variableName="cursor"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.cursor]]></dw:set-variable>
+		</dw:transform-message>
+		<flow-ref name="Ecomm-Product:MapAndAddProductData" doc:name="Ecomm-Product:MapAndAddProductData" />
+		<choice doc:name="CheckForCursor">
+			<when expression="#[flowVars.cursor!=null]">
+				<flow-ref name="Ecomm-Product:CallCursorPage" doc:name="Ecomm-Product:CallCursorPage" />
+			</when>
+			<otherwise>
+				<logger message="Ecomm-Product: No Cursor Found" level="DEBUG" doc:name="Log-DEBUG: No Cursor Found" />
+			</otherwise>
+		</choice>
+		<flow-ref name="Ecomm-Product:GetMappingDataForRetailer" doc:name="Ecomm-Product:GetMappingDataForRetailer" />
+		<flow-ref name="Ecomm-Product:GetRetailerAPIData" doc:name="Ecomm-Product:GetRetailerAPIData" />
+		<set-payload value="#[flowVars.UniqueProductList]"
+			mimeType="application/java" doc:name="Set UniqueProductList as payload" />
+		<json:object-to-json-transformer
+			doc:name="Convert Java Payload to JSON" mimeType="application/json"/>
+		<choice-exception-strategy doc:name="UnauthenticatedAccessExceptions">
+			<catch-exception-strategy when="#[flowVars.EcommAPIAuthentication==false]"
+				doc:name="Catch Authorization Exception">
+				<set-property propertyName="Content-type" value="application/json"
+					mimeType="application/java" doc:name="Property: Content-type" />
+				<set-property propertyName="http.status" value="401"
+					doc:name="Property: http.status" />
+				<set-payload value="{ &quot;message&quot;: &quot;Unauthorized Access&quot; }"
+					mimeType="application/json" doc:name="Set Error Payload" />
+			</catch-exception-strategy>
+            <catch-exception-strategy when="#[message.payload[0].ROLENAME!='ECOMMAPI_USER']" enableNotifications="false" logException="false" doc:name="Catch Invalid Role">
+                <set-property propertyName="Content-type" value="application/json" mimeType="application/java" doc:name="Property: Content-type"/>
+                <set-property propertyName="http.status" value="403" doc:name="Property: http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;Access Denied&quot; }" mimeType="application/json" doc:name="Set Error Payload"/>
+            </catch-exception-strategy>
+		</choice-exception-strategy>
+	</flow>
+	<flow name="Ecomm-Product:CallCursorPage">
+		<http:request config-ref="PIM_HTTPS_Request_Configuration"
+			path="/browse" method="GET" doc:name="HTTPS: Get Next PIM Page">
+			<http:request-builder>
+				<http:query-param paramName="cursor" value="#[flowVars.cursor]" />
+				<http:header headerName="api_key" value="${pim.api.key}" />
+			</http:request-builder>
+		</http:request>
+		<dw:transform-message doc:name="DW: Get Cursor and Payload">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+			<dw:set-variable variableName="cursor"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.cursor]]></dw:set-variable>
+		</dw:transform-message>
+		<flow-ref name="Ecomm-Product:MapAndAddProductData" doc:name="Ecomm-Product:MapAndAddProductData" />
+		<choice doc:name="Check for Cursor">
+			<when expression="#[flowVars.cursor!=null]">
+				<flow-ref name="Ecomm-Product:CallCursorPage" doc:name="Ecomm-Product:CallCursorPage" />
+			</when>
+			<otherwise>
+				<remove-variable variableName="cursor" doc:name="FlowVars: remove Cursor" />
+			</otherwise>
+		</choice>
+	</flow>
+	<sub-flow name="Ecomm-Product:MapAndAddProductData">
+		<dw:transform-message doc:name="DW: Map Payload to Java Object">
+			<dw:input-payload mimeType="application/java" />
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload.hits map {
+	"id":$.id,
+	"productType":$.productType,
+	"language":$.language,
+	"gTinCodeList":$.gTinCodeList,
+	"skuStatus":$.skuStatus,
+	"productName":$.productName,
+	"brand":$.brand,
+	"brandQuality":$.brandQuality,
+	"category":$.category,
+	"countryOfOrigin":$.countryOfOrigin,
+	"onlineExclusive":$.onlineExclusive,
+	"alcoholLevel":$.alcoholLevel,
+	"availableInTheMarket":$.availableInTheMarket,
+	"availableForThePartner":$.availableForThePartner,
+	"description":$.description,
+	"manufacturerDetails":$.manufacturerDetails,
+	"gs1":$.gs1,
+	"packagingDetails":$.packagingDetails,
+	"consumptionTips":$.consumptionTips,
+	"ingredientList":$.ingredientList,
+	"productHistory":$.productHistory,
+	"variety":$.variety,
+	"vintage":$.vintage,
+	"foodPairing":$.foodPairing,
+	"vineyardHistory":$.vineyardHistory,
+	"medalsAndAwards":$.medalsAndAwards,
+	"medalsAndAwardsList":$.medalsAndAwardsList,
+	"tastingNotes":$.tastingNotes,
+	"color":$.color,
+	"taste":$.taste,
+	"aroma":$.aroma,
+	"nutritional":$.nutritional,
+	"localFields":$.localFields,
+	"mediaList":{"urls":$.packshot.urls}
+	} as :object]]></dw:set-payload>
+		</dw:transform-message>
+		<expression-component doc:name="Expression: Add products to productList"><![CDATA[if (payload!=null){
+flowVars.productList.addAll(payload);
+}]]></expression-component>
+		<logger
+			message="Ecomm-Product: Number of Products retrieved - #[flowVars.productList.size()] "
+			level="INFO" doc:name="Log-INFO: size of productList" />
+	</sub-flow>
+    <sub-flow name="Ecomm-Product:GetMappingDataForRetailer">
+        <db:select config-ref="App_DB_Configuration" doc:name="Database: Get Retailer Mapping">
+            <db:parameterized-query><![CDATA[SELECT 
+   ROWID, SEQ, RETAILER_ID, LOCAL_ATTRIBUTE, 
+   URL, BASEPATH, ACCESS_KEY, 
+   CURRENCY_CD
+FROM JAGUAR.COREAPI_ECOMM_MAPPING WHERE UPPER(RETAILER_ID)=UPPER(#[flowVars.retailer])]]></db:parameterized-query>
+        </db:select>
+        <dw:transform-message doc:name="DW: RetailerApiMapping">
+            <dw:input-payload mimeType="application/java"/>
+            <dw:set-variable variableName="RetailerApiMapping"><![CDATA[%dw 1.0
+%output application/java
+---
+payload map {
+	"retailer_id":$.RETAILER_ID,
+	"local_attribute":$.LOCAL_ATTRIBUTE,
+	"api_url":$.URL,
+	"api_basepath":$.BASEPATH,
+	"api_access_key":$.ACCESS_KEY,
+	"currency_cd":$.CURRENCY_CD
+}]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="Ecomm-Product: RETAILER API DATA : #[flowVars.RetailerApiMapping]" level="DEBUG" doc:name="Log-DEBUG: RetailerApiMapping"/>
+    </sub-flow>
+	<sub-flow name="Ecomm-Product:GetRetailerAPIData">
+		<set-variable variableName="UniqueProductList" value="#[[]]"
+			mimeType="application/java" doc:name="FlowVars: UniqueProductList" />
+		<foreach collection="#[flowVars.productList]" doc:name="For Each: productList">
+            <set-variable variableName="product" value="#[flowVars.productList[counter-1]]" mimeType="application/java" doc:name="FlowVars: product"/>
+            <dw:transform-message doc:name="DW: uniqueID">
+                <dw:input-payload mimeType="application/java"/>
+                <dw:set-variable variableName="uniqueID"><![CDATA[%dw 1.0
+%output application/java
+---
+
+flowVars.product.localFields[flowVars.RetailerApiMapping[0].local_attribute]
+when flowVars.product.localFields[flowVars.RetailerApiMapping[0].local_attribute] != ""
+otherwise null
+]]></dw:set-variable>
+            </dw:transform-message>
+            <dw:transform-message doc:name="DW: Map UniqueProduct to object">
+                <dw:input-payload mimeType="application/java"/>
+                <dw:set-variable variableName="UniqueProduct"><![CDATA[%dw 1.0
+%output application/java
+---
+
+	{
+	"id":flowVars.product.id,
+	"productType":flowVars.product.productType,
+	"language":flowVars.product.language,
+	"gTinCodeList":flowVars.product.gTinCodeList,
+	"skuStatus":flowVars.product.skuStatus,
+	"productName":flowVars.product.productName,
+	"brand":flowVars.product.brand,
+	"brandQuality":flowVars.product.brandQuality,
+	"category":flowVars.product.category,
+	"countryOfOrigin":flowVars.product.countryOfOrigin,
+	"onlineExclusive":flowVars.product.onlineExclusive,
+	"alcoholLevel":flowVars.product.alcoholLevel,
+	"availableInTheMarket":flowVars.product.availableInTheMarket,
+	"availableForThePartner":flowVars.product.availableForThePartner,
+	"description":flowVars.product.description,
+	"manufacturerDetails":flowVars.product.manufacturerDetails,
+	"gs1":flowVars.product.gs1,
+	"packagingDetails":flowVars.product.packagingDetails,
+	"consumptionTips":flowVars.product.consumptionTips,
+	"ingredientList":flowVars.product.ingredientList,
+	"productHistory":flowVars.product.productHistory,
+	"variety":flowVars.product.variety,
+	"vintage":flowVars.product.vintage,
+	"foodPairing":flowVars.product.foodPairing,
+	"vineyardHistory":flowVars.product.vineyardHistory,
+	"medalsAndAwards":flowVars.product.medalsAndAwards,
+	"medalsAndAwardsList":flowVars.product.medalsAndAwardsList,
+	"tastingNotes":flowVars.product.tastingNotes,
+	"color":flowVars.product.color,
+	"taste":flowVars.product.taste,
+	"aroma":flowVars.product.aroma,
+	"nutritional":flowVars.product.nutritional,
+	"localFields":flowVars.product.localFields,
+	"mediaList":{"urls":flowVars.product.mediaList.urls},
+	"current_price": null,
+	"everyday_price":null,
+	"discount":null,
+	"discount_end_date":null,
+	"has_vap": false,
+	"vap_description": null,
+	"retailer_product_id":flowVars.uniqueID,
+	"discount_start_date": null,
+	"currency":flowVars.RetailerApiMapping[0].currency_cd
+	} as :object]]></dw:set-variable>
+            </dw:transform-message>
+            <choice doc:name="Check ignorePrice Flag">
+                <when expression="#[flowVars.ignorePrice != &quot;Y&quot;]">
+                    <flow-ref name="Ecomm-Product:GetPricefromLCBO" doc:name="Ecomm-Product:GetPricefromLCBO"/>
+                </when>
+                <otherwise>
+                    <expression-component doc:name="Expression: Add products to productList"><![CDATA[if (flowVars.UniqueProduct!=null){
+flowVars.UniqueProductList.add(flowVars.UniqueProduct);
+}]]></expression-component>
+                </otherwise>
+            </choice>
+		</foreach>
+	</sub-flow>
+	<flow name="Ecomm-Product:GetPricefromLCBO">
+		<choice doc:name="CheckForUniqueID">
+			<when expression="#[flowVars.uniqueID!=null]">
+				<logger message="Ecomm-Product: Unique ID Found #[flowVars.uniqueID]" level="DEBUG"
+					doc:name="Log-DEBUG: uniqueID" />
+                <invoke object-ref="invokeLCBOData" method="getPrices" methodArguments="#[flowVars.uniqueID]" doc:name="Java: Invoke getPrices()"/>
+                <validation:is-not-null config-ref="Validation_Configuration" value="#[payload]" doc:name="Validate: Null Return Value"/>
+                <dw:transform-message doc:name="Put LCBO Info into Object">
+                    <dw:set-variable variableName="lcboInfo"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	"current_price":payload.currentPrice as :number {format : "##.##"} 
+					when payload.currentPrice != null otherwise 0,
+	"everyday_price":payload.regularPrice as :number {format : "##.##"}
+					when payload.regularPrice != null otherwise 0,
+	
+	"discount":payload.discount as :number {format : "##.##"}
+				when payload.discount != null otherwise 0,
+	"discount_end_date":payload.discountEndDate
+}]]></dw:set-variable>
+                </dw:transform-message>
+                <expression-component doc:name="Add LCBO Info to UniqueProduct"><![CDATA[flowVars.UniqueProduct.current_price = flowVars.lcboInfo.current_price;
+flowVars.UniqueProduct.everyday_price = flowVars.lcboInfo.everyday_price;
+flowVars.UniqueProduct.discount = flowVars.lcboInfo.discount;
+flowVars.UniqueProduct.discount_end_date = flowVars.lcboInfo.discount_end_date;
+]]></expression-component>
+                <expression-component doc:name="Expression: Add products to productList"><![CDATA[if (flowVars.UniqueProduct!=null){
+flowVars.UniqueProductList.add(flowVars.UniqueProduct);
+}]]></expression-component>
+			</when>
+			<otherwise>
+				<logger message="Ecomm-Product: Unique ID not found" level="DEBUG" doc:name="Log-DEBUG: UniqueID not found" />
+			</otherwise>
+		</choice>
+		<choice-exception-strategy doc:name="Choice Exception Strategy">
+			<catch-exception-strategy
+				when="exception.causedBy(org.mule.module.http.internal.request.ResponseValidatorException)"
+				logException="false" doc:name="Catch Exception Strategy">
+				<logger message="Ecomm-Product: Product Page Not Found" level="WARN"
+					doc:name="Log-WARN: Page Not found" />
+			</catch-exception-strategy>
+            <catch-exception-strategy when="#[payload == null]" enableNotifications="false" logException="false" doc:name="Catch Exception Strategy">
+                <logger message="Ecomm-Product: Could not get data for product #[flowVars.uniqueID]" level="DEBUG" doc:name="Log-DEBUG: No data"/>
+            </catch-exception-strategy>
+		</choice-exception-strategy>
+	</flow>
+	<flow name="get:/ecomm/retailers:prna-ecomm-products-api-config">
+		<flow-ref name="Ecommapi:SecurityFlow" doc:name="Ecommapi:SecurityFlow" />
+		<validation:all config-ref="Validation_Configuration"
+			 doc:name="Validate: Authorization &amp; Role" >
+            <validation:validations>
+                <validation:is-true expression="#[flowVars.EcommAPIAuthentication]"/>
+                <validation:matches-regex value="#[message.payload[0].ROLENAME]" regex="ECOMMAPI_USER"/>
+            </validation:validations>
+        </validation:all>
+		<logger
+			message="Ecomm-Product: Getting Retailers for locale - #[message.inboundProperties.'http.query.params'.locale] "
+			level="INFO" doc:name="Log-INFO: Locale" />
+		<http:request config-ref="PIM_HTTPS_Request_Configuration"
+			path="/#[message.inboundProperties.'http.query.params'.locale]/retailer"
+			method="GET" doc:name="HTTPS: GetRetailersFromPIM">
+			<http:request-builder>
+				<http:header headerName="api_key" value="${pim.api.key}" />
+			</http:request-builder>
+		</http:request>
+		<dw:transform-message doc:name="DW: Payload JSON2JAVA">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+		</dw:transform-message>
+		<validation:validate-size config-ref="Validation_Configuration"
+			value="#[message.payload.hits]" min="1" doc:name="Validate: Null Response" />
+		<dw:transform-message doc:name="DW: Map Data to JSON">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload.hits map {
+	"id":$.id,
+	"label":$.label,
+	"market":$.market,
+	"marketLabel":$.marketLabel
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<choice-exception-strategy doc:name="Exceptions">
+		  <catch-exception-strategy when="#[flowVars.EcommAPIAuthentication==false]" enableNotifications="false" logException="false" doc:name="Catch Unauthenticated Request">
+                <set-property propertyName="Content-type" value="application/json" mimeType="application/java" doc:name="Property: Content-type"/>
+                <set-property propertyName="http.status" value="401" doc:name="Property: http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;Unauthorized Access&quot; }" mimeType="application/json" doc:name="Set Error Payload"/>
+            </catch-exception-strategy>
+            <catch-exception-strategy when="#[message.payload[0].ROLENAME!='ECOMMAPI_USER']" enableNotifications="false" logException="false" doc:name="Catch Invalid Role">
+                <set-property propertyName="Content-type" value="application/json" mimeType="application/java" doc:name="Property: Content-type"/>
+                <set-property propertyName="http.status" value="403" doc:name="Property: http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;Access Denied&quot; }" mimeType="application/json" doc:name="Set Error Payload"/>
+            </catch-exception-strategy>
+			<catch-exception-strategy when="#[message.payload.hits.size()==0]"
+				enableNotifications="false" logException="false" doc:name="Catch Empty Response from PIM">
+				<set-property propertyName="Content-type" value="application/json"
+					mimeType="application/java" doc:name="Property: Content-type" />
+				<set-property propertyName="http.status" value="404"
+					doc:name="Property: http.status" />
+				<set-payload value="{ &quot;message&quot;: &quot;Locale Not found&quot; }"
+					mimeType="application/json" doc:name="Set Error Payload" />
+			</catch-exception-strategy>
+		</choice-exception-strategy>
+	</flow>
+	<apikit:mapping-exception-strategy
+		name="prna-ecomm-products-api-apiKitGlobalExceptionMapping">
+		<apikit:mapping statusCode="404">
+			<apikit:exception
+				value="org.mule.module.apikit.exception.NotFoundException" />
+			<set-property propertyName="Content-Type" value="application/json"
+				doc:name="Property" />
+			<set-payload
+				value="{ &quot;message&quot;: &quot;Resource not found&quot; }"
+				doc:name="Set Payload" />
+		</apikit:mapping>
+		<apikit:mapping statusCode="405">
+			<apikit:exception
+				value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+			<set-property propertyName="Content-Type" value="application/json"
+				doc:name="Property" />
+			<set-payload
+				value="{ &quot;message&quot;: &quot;Method not allowed&quot; }"
+				doc:name="Set Payload" />
+		</apikit:mapping>
+		<apikit:mapping statusCode="415">
+			<apikit:exception
+				value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+			<set-property propertyName="Content-Type" value="application/json"
+				doc:name="Property" />
+			<set-payload
+				value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }"
+				doc:name="Set Payload" />
+		</apikit:mapping>
+		<apikit:mapping statusCode="406">
+			<apikit:exception
+				value="org.mule.module.apikit.exception.NotAcceptableException" />
+			<set-property propertyName="Content-Type" value="application/json"
+				doc:name="Property" />
+			<set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }"
+				doc:name="Set Payload" />
+		</apikit:mapping>
+		<apikit:mapping statusCode="400">
+			<apikit:exception
+				value="org.mule.module.apikit.exception.BadRequestException" />
+			<set-property propertyName="Content-Type" value="application/json"
+				doc:name="Property" />
+			<set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }"
+				doc:name="Set Payload" />
+		</apikit:mapping>
+	</apikit:mapping-exception-strategy>
+</mule>

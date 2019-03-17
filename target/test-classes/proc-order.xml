@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub" xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd">
+    <http:listener-config name="proc-prna-httpListenerConfig" host="0.0.0.0" port="8086" doc:name="HTTP Listener Configuration"/>
+    <apikit:config name="proc-prna-config" raml="proc/proc-order.raml" consoleEnabled="false" doc:name="Router"/>
+    <configuration doc:name="Configuration">
+        <expression-language>
+            <global-functions>def incrementCounter() 
+			 {
+			 flowVars.lineCounter = flowVars.lineCounter + 1;
+			 return flowVars.lineCounter;
+			 }</global-functions>
+        </expression-language>
+    </configuration>
+    <http:request-config name="Channel_HTTP_Request_Configuration" protocol="HTTPS" host="#[flowVars.BASE_URL]" port="443" doc:name="HTTP Request Configuration">
+        <http:basic-authentication username="#[flowVars.API_KEY]" password="#[flowVars.API_PASSWORD]" preemptive="true" />
+    </http:request-config>
+    <cloudhub:token-config name="Cloudhub__Inhered_Token_Authentication1" doc:name="Cloudhub: Inhered Token Authentication" />
+
+    <flow name="proc-prna-main">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="/proc/ecomm/*" doc:name="HTTPS"/>
+        <apikit:router config-ref="proc-prna-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="proc-prna-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="proc-prna-console">
+        <http:listener config-ref="proc-prna-httpListenerConfig" path="/console/*" doc:name="HTTP"/>
+        <apikit:console config-ref="proc-prna-config" doc:name="APIkit Console"/>
+    </flow>
+
+    <flow name="post:/order:proc-prna-config">
+        <logger message="Ecomm-order:Process Flow for has been started  : #[sessionVars.orderData]" level="DEBUG" doc:name="Logger" />
+        <set-session-variable variableName="procflowName" value="#['SendOrder']" doc:name="Set procflowName" />
+        <flow-ref name="Get_MM_Carrier_Code_prnaSub_Flow" doc:name="Get_MM_Carrier_Code_prnaSub_Flow" />
+        <db:select config-ref="Order_DB_Configuration" doc:name="Retrieve Destination Schema from DB">
+            <db:parameterized-query><![CDATA[SELECT REPLACE(C.DESTINATION_SCHEMA, '$', 'sessionVars.orderData') AS DESTINATION_SCHEMA, W.REQ_RES_TYPE, W.BASE_URL, C.API_PATH, W.API_KEY, W.API_PASSWORD FROM coreapi_ecomm_chwh_xref C INNER JOIN coreapi_ecomm_warehouse W ON (W.WAREHOUSE_ID=C.WAREHOUSE_ID) WHERE C.CHANNEL_ID = #[message.inboundProperties.'http.query.params'.channel] AND C.WAREHOUSE_ID = #[message.inboundProperties.'http.query.params'.warehouse] AND C.FLOW_NAME='SendOrder']]></db:parameterized-query>
+
+        </db:select>
+        <flow-ref name="Prepare_Warehouse_Data_Flow" doc:name="Prepare_Warehouse_Data_Flow" />
+        <expression-component doc:name="Set Shipping Carrier"><![CDATA[message.payload.SHIP_CARRIER= flowVars.CARRIER_CODE]]></expression-component>
+        <expression-component doc:name="Set Channel Identifier"><![CDATA[message.payload.LOCATION=message.inboundProperties.'http.query.params'.channel]]></expression-component>
+        <json:object-to-json-transformer mimeType="application/json" doc:name="Set Warehouse  Data Format" />
+        <logger message="Ecomm-order:Final Order Data  : #[payload]" level="INFO" doc:name="Log Final Order Data " />
+        <flow-ref name="Call_Warehouse_API_Sub_Flow" doc:name="Call_Warehouse_API_Sub_Flow" />
+        <choice doc:name="Choice">
+            <when expression="#[(org.apache.commons.lang3.StringUtils.indexOf(payload, 'true') &gt;0 &amp;&amp; org.apache.commons.lang3.StringUtils.indexOf(payload, 'SUCCESS') &gt;0 )]">
+                <logger message="Ecomm-order:Valid order." level="INFO" doc:name="Logger" />
+            </when>
+            <otherwise>
+                <choice doc:name="Choice">
+                    <when expression="#[sessionVars.WareHouseMessage.contains('Duplicate')]">
+                        <logger message="Ecomm-order:Duplicated Order Line" level="INFO" doc:name="Logger" />
+                        <message-properties-transformer doc:name="Message Properties">
+                            <add-message-property key="http.status" value="200" />
+                            <add-message-property key="http.reason" value="Duplicate Order" />
+                        </message-properties-transformer>
+                        <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="DUPLICATE ORDER LINE - #[app.name]. Order Id:#[sessionVars.orderData.id]. #[sessionVars.WareHouseResponse]" priority="ERROR" doc:name="Cloudhub" />
+                    </when>
+                    <otherwise>
+                        <logger message="Ecomm-order:Invalid Sku" level="INFO" doc:name="Logger" />
+                        <message-properties-transformer doc:name="Message Properties">
+                            <add-message-property key="http.status" value="200" />
+                            <add-message-property key="http.reason" value="Invalid Sku" />
+                        </message-properties-transformer>
+                        <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="PRODUCT NOT FOUND - #[app.name].  The Product/SKU Id(#[flowVars.skuID]) is invalid. #[sessionVars.WareHouseResponse]" priority="ERROR" doc:name="Cloudhub" />
+                    </otherwise>
+                </choice>
+            </otherwise>
+        </choice>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="exception.causedBy(org.mule.extension.validation.api.ValidationException)" doc:name="Catch Exception Strategy - No Records Validation">
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="http.status" value="200" />
+                    <add-message-property key="http.reason" value="Invalid Carrier Code" />
+                </message-properties-transformer>
+                <logger message="Ecomm-order:Carrier Code not found" level="INFO" doc:name="Carrier Code not found" />
+                <set-payload value="The Carrier code #[sessionVars.orderData.shipping_lines[0].code] is invalid." doc:name="Set Payload" />
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="INVALID CARRIER CODE- The Carrier code #[sessionVars.orderData.shipping_lines[0].code] is invalid" priority="ERROR" doc:name="Cloudhub" />
+            </catch-exception-strategy>
+            <catch-exception-strategy when="#[payload.authentication==false]" doc:name="Catch Exception Strategy">
+                <set-payload value="#['Authentication Failed']" doc:name="Authentication Failure" />
+                <set-property propertyName="http.status" value="401" doc:name="httpStatus" />
+            </catch-exception-strategy>
+            <catch-exception-strategy doc:name="Catch Exception Strategy" when="java.net.NoRouteToHostException">
+                <logger message="Ecomm-order:Failed to Connect with Warehouse" level="INFO" doc:name="Logger" />
+                <set-payload value="#['Failed to Connect with Warehouse']" doc:name="Warehouse Connection Failure" />
+                <set-property propertyName="http.status" value="500" doc:name="httpStatus" />
+            </catch-exception-strategy>
+            <catch-exception-strategy doc:name="Catch Exception Strategy-DB" when="java.sql.SQLException">
+                <logger message="Ecomm-order:Failed to Connect with Database" level="INFO" doc:name="Logger" />
+                <set-payload value="#['Failed to Connect with Database']" doc:name="Database Connection Failure" />
+                <set-property propertyName="http.status" value="500" doc:name="httpStatus" />
+            </catch-exception-strategy>
+            <catch-exception-strategy doc:name="Catch Exception Strategy" when="#[exception.causeMatches('com.mulesoft.weave.*')]">
+                <logger message="Ecomm-order:DataWeave Exception" level="INFO" doc:name="Logger" />
+                <set-payload value="Database Error: #[exception.getMessage()]" doc:name="Dataweave Exception" />
+                <set-property propertyName="http.status" value="400" doc:name="httpStatus" />
+            </catch-exception-strategy>
+            <catch-exception-strategy doc:name="Catch Exception Strategy" when="#[exception.causeMatches('org.mule.api.expression.*')]">
+                <logger message="Ecomm-order:Expression Runtime Exception" level="INFO" doc:name="Logger" />
+                <set-payload value="Expression Error: #[exception.getMessage()]" doc:name="Expression Exception" />
+                <set-property propertyName="http.status" value="400" doc:name="httpStatus" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="post:/order/cancel:proc-prna-config">
+        <logger message="Ecomm-order:Process Flow Cancel has been started  : #[sessionVars.orderCancelData]" level="DEBUG" doc:name="Logger" />
+        <set-session-variable variableName="procflowName" value="#['CancelOrder']" doc:name="Set procflowName" />
+        <db:select config-ref="Order_DB_Configuration" doc:name="Retrieve Destination Schema from DB">
+            <db:parameterized-query><![CDATA[SELECT REPLACE(C.DESTINATION_SCHEMA, '$', 'sessionVars.orderCancelData') AS DESTINATION_SCHEMA, W.REQ_RES_TYPE, W.BASE_URL, C.API_PATH, W.API_KEY, W.API_PASSWORD FROM coreapi_ecomm_chwh_xref C INNER JOIN coreapi_ecomm_warehouse W ON (W.WAREHOUSE_ID=C.WAREHOUSE_ID) WHERE C.CHANNEL_ID = #[message.inboundProperties.'http.query.params'.channel] AND C.WAREHOUSE_ID = #[message.inboundProperties.'http.query.params'.warehouse] AND C.FLOW_NAME='CancelOrder']]></db:parameterized-query>
+        </db:select>
+        <flow-ref name="Prepare_Warehouse_Data_Flow" doc:name="Prepare_Warehouse_Data_Flow" />
+        <json:object-to-json-transformer mimeType="application/json" doc:name="Set Warehouse  Data Format" />
+        <logger message="Ecomm-order:Final Order Data  : #[payload]" level="DEBUG" doc:name="Log Final Order Data " />
+        <flow-ref name="Call_Warehouse_API_Sub_Flow" doc:name="Call_Warehouse_API_Sub_Flow" />
+        <choice doc:name="Choice">
+            <when expression="#[(org.apache.commons.lang3.StringUtils.indexOf(payload, 'false') &gt;0 &amp;&amp; org.apache.commons.lang3.StringUtils.indexOf(payload, 'SUCCESS') &gt;0 )]">
+                <logger level="INFO" doc:name="Logger" message="Ecomm-order:The cancellation has already been done." />
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" doc:name="Cloudhub" domain="#[app.name]" message="CANCEL ORDER - #[app.name]. Order id is:  #[sessionVars.orderCancelData.id]. #[sessionVars.WareHouseResponse]" priority="INFO" />
+            </when>
+            <otherwise>
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CANCEL ORDER - #[app.name]. Order id is:  #[sessionVars.orderCancelData.id]. #[sessionVars.WareHouseResponse]" priority="INFO" doc:name="Cloudhub" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="post:/order/fulfillment:proc-prna-config">
+        <logger message="Ecomm-order:Process Flow Fulfillment has been started  : #[sessionVars.orderFulfillmentData]" level="DEBUG" doc:name="Logger" />
+        <set-session-variable variableName="procflowName" value="#['FulfillmentOrder']" doc:name="Set procflowName" />
+        <set-variable variableName="orderId" value="#[null!=sessionVars.orderFulfillmentData.FULFILLMENT ? sessionVars.orderFulfillmentData.FULFILLMENT.CUSTOMER_ORDER_ID:sessionVars.orderFulfillmentData.id]" doc:name="Get OrderId" mimeType="application/java" />
+        <db:select config-ref="Order_DB_Configuration" doc:name="Retrieve Destination Schema from DB">
+            <db:parameterized-query><![CDATA[SELECT REPLACE(REPLACE(X.DESTINATION_SCHEMA, '$', 'sessionVars.orderFulfillmentData'),'@payloadData','$') AS DESTINATION_SCHEMA, 
+C.REQ_RES_TYPE, C.BASE_URL, X.API_PATH, C.API_KEY, C.API_PASSWORD, W.LOCATION_ID FROM coreapi_ecomm_chwh_xref X 
+INNER JOIN coreapi_ecomm_channel C ON (C.CHANNEL_ID=X.CHANNEL_ID) 
+INNER JOIN coreapi_ecomm_warehouse W ON (W.WAREHOUSE_ID=X.WAREHOUSE_ID) 
+WHERE X.CHANNEL_ID = #[message.inboundProperties.'http.query.params'.channel] AND X.WAREHOUSE_ID = #[message.inboundProperties.'http.query.params'.warehouse] AND X.FLOW_NAME='OrderFulfillment']]></db:parameterized-query>
+        </db:select>
+        <flow-ref name="Prepare_Channel_Data_Flow" doc:name="Prepare_Channel_Data_Flow" />
+        <logger message="Ecomm-order:Final Fulfillment Data  : #[payload]" level="INFO" doc:name="Log Final Fulfillment Data " />
+        <choice doc:name="Check if Payload Fulfillment is empty">
+            <when expression="#[message.payload.fulfillment.size()&gt;0]">
+                <json:object-to-json-transformer mimeType="application/json" doc:name="Set Warehouse  Data Format" />
+                <flow-ref name="Call_Channel_API_Sub_Flow" doc:name="Call_Channel_API_Sub_Flow" />
+            </when>
+            <otherwise>
+                <logger message="Payload was Empty" level="INFO" doc:name="Empty Payload" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="Get_MM_Carrier_Code_prnaSub_Flow">
+        <db:select config-ref="Order_DB_Configuration" doc:name="Retrieve Carrier Code">
+            <db:parameterized-query><![CDATA[SELECT * FROM (
+SELECT CARRIER_CODE, SHIPPING_CODE, IS_DEFAULT_SHIPPING FROM COREAPI_ECOMM_CARRIER_CODES 
+WHERE CHANNEL_ID = #[message.inboundProperties.'http.query.params'.channel]  
+AND WAREHOUSE_ID = #[message.inboundProperties.'http.query.params'.warehouse]
+AND (SHIPPING_CODE = 'DEFAULT' OR IS_DEFAULT_SHIPPING = 1) 
+ORDER BY IS_DEFAULT_SHIPPING ASC )]]></db:parameterized-query>
+
+        </db:select>
+        <validation:validate-size config-ref="Validation_Configuration" min="1" max="1" value="#[message.payload]" doc:name="No Records Found Validation" />
+        <set-variable variableName="CARRIER_CODE" value="#[payload[0].CARRIER_CODE]" doc:name="Set Carrier Code" />
+        <logger message="Ecomm-order:The Carrier Code is #[flowVars.CARRIER_CODE]" level="DEBUG" doc:name="Logger" />
+    </flow>
+    <sub-flow name="Prepare_Warehouse_Data_Flow">
+        <set-variable variableName="destinationSchema" value="#[payload[0].DESTINATION_SCHEMA]" doc:name="Set destinationSchema = Database Schema" />
+        <set-variable variableName="BASE_URL" value="#[payload[0].BASE_URL]" doc:name="Get API Base URL" />
+        <set-variable variableName="API_PATH" value="#[payload[0].API_PATH]" doc:name="Get API Path" />
+        <set-variable variableName="API_KEY" value="#[payload[0].API_KEY]" doc:name="Get API Key" />
+        <set-variable variableName="API_PASSWORD" value="#[payload[0].API_PASSWORD]" doc:name="Get API Password" />
+        <logger message="Ecomm-order:Order Data is : #[sessionVars.orderData]" level="INFO" doc:name="Log Order Data" />
+        <logger message="Ecomm-order:Destination Schema : #[payload[0].DESTINATION_SCHEMA]" level="INFO" doc:name="Log Destination Schema" />
+        <set-variable doc:name="lineCounter" value="#[Integer.parseInt(0)]" variableName="lineCounter" />
+        <expression-transformer expression="#[dw(flowVars.destinationSchema,&quot;application/java&quot;)]" doc:name="Execute Datawave Mapping" mimeType="application/java" />
+        <expression-component doc:name="Set Access Code of Channel"><![CDATA[message.payload.strAccessCode=flowVars.API_PASSWORD]]></expression-component>
+        <expression-component doc:name="Set Username of Channel"><![CDATA[message.payload.strUser=flowVars.API_KEY]]></expression-component>
+    </sub-flow>
+    <sub-flow name="Prepare_Channel_Data_Flow">
+        <set-variable variableName="destinationSchema" value="#[payload[0].DESTINATION_SCHEMA]" doc:name="Set destinationSchema = Database Schema" />
+        <set-variable variableName="BASE_URL" value="#[payload[0].BASE_URL]" doc:name="Get API Base URL" />
+        <set-variable variableName="API_PATH" value="#[payload[0].API_PATH.replace('{orderId}',flowVars.orderId.toString())]" doc:name="Repalce OrderId in URL" />
+        <set-variable variableName="LOCATION_ID" value="#[payload[0].LOCATION_ID]" doc:name="Get Location Id" />
+        <set-variable variableName="API_KEY" value="#[payload[0].API_KEY]" doc:name="Get API Key" />
+        <set-variable variableName="API_PASSWORD" value="#[payload[0].API_PASSWORD]" doc:name="Get API Password" />
+        <logger message="Ecomm-order:Order Data is : #[sessionVars.orderData]" level="DEBUG" doc:name="Log Order Data" />
+        <logger message="Ecomm-order:Destination Schema : #[payload[0].DESTINATION_SCHEMA]" level="DEBUG" doc:name="Log Destination Schema" />
+        <expression-transformer expression="#[dw(flowVars.destinationSchema,&quot;application/java&quot;)]" doc:name="Execute Datawave Mapping " mimeType="application/java" />
+        <expression-component doc:name="Set Location Id of Warehouse"><![CDATA[if(!message.payload.fulfillment.isEmpty()){
+message.payload.fulfillment.location_id=flowVars.LOCATION_ID;
+}]]></expression-component>
+        <expression-component doc:name="Set Notification"><![CDATA[if(!message.payload.fulfillment.isEmpty()){
+message.payload.fulfillment.notify_customer=true;
+}]]></expression-component>
+    </sub-flow>
+    <sub-flow name="Call_Warehouse_API_Sub_Flow">
+        <http:request config-ref="Order_HTTP_Request_Configuration" path="/#[flowVars.API_PATH]" method="POST" doc:name="Post Order to Warehouse">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json"/>
+
+            </http:request-builder>
+            <http:success-status-code-validator values="0..599" />
+        </http:request>
+        <logger message="Ecomm-order:HTTP Status is : #[message.inboundProperties['http.status']]" level="INFO" doc:name="Log HTTP Status" />
+        <object-to-string-transformer doc:name="Object to String" />
+        <logger message="Ecomm-order:HTTP Response is : #[message.payloadAs(java.lang.String)]" level="DEBUG" doc:name="Log HTTP Response" />
+        <set-payload value="#[message.payloadAs(java.lang.String)]" doc:name="Set Payload" />
+        <set-session-variable variableName="WareHouseResponse" value="#[message.payloadAs(java.lang.String)]" doc:name="MMResponse" />
+        <set-variable variableName="part1" value="#[payload]" doc:name="Variable" />
+        <expression-component doc:name="Expression"><![CDATA[flowVars.part1 = (payload != null )?payload.split(':')[2]:null;]]></expression-component>
+        <set-session-variable variableName="WareHouseMessage" value="#[flowVars.part1.replace('\\&quot;','').replace('}&quot;','')]" doc:name="MMMessage" />
+    </sub-flow>
+    <sub-flow name="Call_Channel_API_Sub_Flow">
+        <http:request config-ref="Channel_HTTP_Request_Configuration" path="/#[flowVars.API_PATH]" method="POST" doc:name="Post Request to Channel">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+            <http:success-status-code-validator values="0..599" />
+        </http:request>
+        <logger message="Ecomm-order:HTTP Status is : #[message.inboundProperties['http.status']]" level="INFO" doc:name="Log HTTP Status" />
+        <object-to-string-transformer doc:name="Convert HTTP Response : Obj to Str" />
+        <logger message="Ecomm-order:HTTP Response is : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log HTTP Response" />
+        <set-payload value="#[message.payloadAs(java.lang.String)]" doc:name="Get HTTP Response" />
+    </sub-flow>
+    <flow name="post:/product/inventory/update:proc-prna-config">
+        <logger message="Ecomm-order:Process Flow Sync Inventory has been started  : #[sessionVars.syncInventoryData]" level="DEBUG" doc:name="Logger" />
+        <set-session-variable variableName="procflowName" value="#['SyncInventory']" doc:name="Set procflowName" />
+        <set-payload value="#[sessionVars.syncInventoryData]" doc:name="Get Inventory Data" />
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert Inventory Data to Object" />
+        <set-session-variable variableName="inventoryData" value="#[payload]" doc:name="Set Inventory Data" />
+        <db:select config-ref="Order_DB_Configuration" doc:name="Retrieve Destination Schema from DB">
+            <db:parameterized-query><![CDATA[SELECT
+ REPLACE(
+   C.DESTINATION_SCHEMA,
+   '$',
+   'flowVars'
+ ) AS DESTINATION_SCHEMA,
+ C.API_PATH,
+ CH.REQ_RES_TYPE,
+ CH.BASE_URL,
+ CH.API_KEY,
+ CH.API_PASSWORD 
+FROM
+ coreapi_ecomm_chwh_xref C
+ INNER JOIN coreapi_ecomm_channel CH
+   ON (CH.CHANNEL_ID = C.CHANNEL_ID) 
+WHERE C.CHANNEL_ID = #[message.inboundProperties.'http.query.params'.channel] AND C.FLOW_NAME='SyncInventory']]></db:parameterized-query>
+        </db:select>
+        <validation:validate-size config-ref="Validation_Configuration" min="1" max="1" value="#[message.payload]" doc:name="No Records Found Validation" />
+        <set-variable variableName="destinationSchema" value="#[payload[0].DESTINATION_SCHEMA]" doc:name="Set destinationSchema = Database Schema" />
+        <set-variable variableName="BASE_URL" value="#[payload[0].BASE_URL]" doc:name="Get API Base URL" />
+        <set-variable variableName="API_PATH" value="#[payload[0].API_PATH]" doc:name="Get API Path" />
+        <set-variable variableName="API_KEY" value="#[payload[0].API_KEY]" doc:name="Get API Key" />
+        <set-variable variableName="API_PASSWORD" value="#[payload[0].API_PASSWORD]" doc:name="Get API Password" />
+        <logger message="Ecomm-order:Order Data is : #[sessionVars.inventoryData]" level="DEBUG" doc:name="Log Order Data" />
+        <logger message="Ecomm-order:Destination Schema : #[payload[0].DESTINATION_SCHEMA]" level="DEBUG" doc:name="Log Destination Schema" />
+        <set-variable variableName="setCombinedresult" value="#['response:']" doc:name="Set Combined Result" />
+        <set-variable variableName="successCount" value="#[Integer.parseInt(0)]" doc:name="Set Success Counter" />
+        <set-variable variableName="finalSuccessCount" value="#[Integer.parseInt(0)]" doc:name="Set Final Success Count" />
+        <flow-ref name="proc-order_Get_Location_ID_Sub_Flow" doc:name="proc-order_Get_Location_ID_Sub_Flow" />
+        <foreach collection="#[sessionVars.inventoryData.PRODUCT_IDS]" doc:name="For Each">
+            <logger message="Ecomm-order:The Loop #[flowVars.counter] is : #[payload.PRODUCT_ID]" level="DEBUG" doc:name="Log Loop Value" />
+            <set-variable variableName="skuID" value="#[payload.PRODUCT_ID]" doc:name="Set SKU ID" />
+            <set-variable variableName="availableQuantity" value="#[payload.QTY]" doc:name="Set Available Qty" />
+            <flow-ref name="proc-order_Get_Inventory_Item_ID_Sub_Flow" doc:name="proc-order_Get_Inventory_Item_ID_Sub_Flow" />
+            <logger message="Ecomm-order:Inventory Item ID is : #[flowVars.inventoryItemId]" level="DEBUG" doc:name="Log Inventory Item ID" />
+            <choice doc:name="Choice">
+                <when expression="#[flowVars.inventoryItemId &gt;0]">
+                    <flow-ref name="proc-order_Inventory_Shopify_API_Sub_Flow" doc:name="proc-order_Inventory_Shopify_API_Sub_Flow" />
+                </when>
+                <otherwise>
+                    <logger message="Ecomm-order:Inventory will not be updated." level="INFO" doc:name="Logger" />
+                </otherwise>
+            </choice>
+        </foreach>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.finalSuccessCount &gt;0]">
+                <set-payload value="#['{' + flowVars.setCombinedresult + '}']" doc:name="Set Inventory Response" />
+            </when>
+            <otherwise>
+                <set-payload value="#['Inventory did not update for any product']" doc:name="Set Inventory Response" />
+            </otherwise>
+        </choice>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="exception.causedBy(org.mule.extension.validation.api.ValidationException)" doc:name="Catch Exception Strategy - No Records Validation">
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="http.status" value="422" />
+                    <add-message-property key="http.reason" value="Database Mapping Error" />
+                </message-properties-transformer>
+                <logger message="Ecomm-order:Database Mapping Not Found." level="INFO" doc:name="Database Mapping Not Found" />
+                <set-payload value="Database Mapping Not Found" doc:name="Set Payload" />
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="NO DATABASE RECORD - Database Mapping Not Found." priority="ERROR" doc:name="Cloudhub" />
+            </catch-exception-strategy>
+            <catch-exception-strategy when="#[exception.causedBy(org.mule.module.http.internal.request.ResponseValidatorException)]" doc:name="Catch Exception Strategy">
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="http.status" value="400" />
+                    <add-message-property key="http.reason" value="Failed to Connect to Endpoint" />
+                </message-properties-transformer>
+                <logger message="Ecomm-order:Failed to Connect to Endpoint" level="INFO" doc:name="Logger" />
+                <set-payload value="#['Http internal request response validator exception - either the location Id or one of the body elements is invalid.']" doc:name="Request Response Validaton Failure" />
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="REQUEST ERROR - Http internal request response validator exception - either the location Id or one of the body elements is invalid " priority="ERROR" doc:name="Cloudhub" />
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <sub-flow name="proc-order_Get_Location_ID_Sub_Flow">
+        <db:select config-ref="Order_DB_Configuration" doc:name="Retrieve Location ID">
+            <db:parameterized-query><![CDATA[SELECT LOCATION_ID FROM coreapi_ecomm_warehouse WHERE WAREHOUSE_ID=#[message.inboundProperties.'http.query.params'.warehouse]]]></db:parameterized-query>
+        </db:select>
+        <set-variable variableName="locationId" value="#[payload[0].LOCATION_ID]" doc:name="Set Location ID" />
+        <logger message="Ecomm-order:Location ID is : #[flowVars.locationId]" level="DEBUG" doc:name="Log Location ID" />
+    </sub-flow>
+    <sub-flow name="proc-order_Get_Inventory_Item_ID_Sub_Flow">
+        <http:request config-ref="Channel_HTTP_Request_Configuration" path="/admin/products.json" method="GET" doc:name="Call Shopify API to Get Product Details" />
+        <logger message="Ecomm-order:HTTP Status of Product API is : #[message.inboundProperties['http.status']]" level="DEBUG" doc:name="Log HTTP Status" />
+        <logger message="Ecomm-order:Product Details is : #[message.payloadAs(java.lang.String)]" level="DEBUG" doc:name="Log HTTP Response" />
+        <set-payload value="#[message.payloadAs(java.lang.String)]" mimeType="application/json" doc:name="Get HTTP Response" />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+invenproducts :
+payload.products.variants map {
+	(id : $.inventory_item_id) when ($.sku contains flowVars.skuID)
+} filter $ != {}]]></dw:set-payload>
+        </dw:transform-message>
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert Json Response to Object" />
+        <choice doc:name="Choice">
+            <when expression="#[payload.invenproducts.isEmpty()]">
+                <set-variable variableName="inventoryItemId" value="0" doc:name="Set Inventory Item ID" />
+                <logger message="Ecomm-order:Product Details Not Found " level="INFO" doc:name="Logger" />
+                <logger message="Ecomm-order:ProductId  #[flowVars.skuID] is invalid. Sending notification email to the group." level="INFO" doc:name="Logger" />
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="PRODUCT NOT FOUND  - #[app.name]. Product Id #[flowVars.skuID] was not found " priority="ERROR" doc:name="Cloudhub" />
+            </when>
+            <otherwise>
+                <choice doc:name="Choice">
+                    <when expression="#[payload.invenproducts[0].id[0] == '']">
+                        <set-variable variableName="inventoryItemId" value="0" doc:name="Set Inventory Item ID" />
+                        <logger message="Ecomm-order:ProductId  #[flowVars.skuID] is invalid. Sending notification email to the group." level="INFO" doc:name="Logger" />
+                        <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="PRODUCT NOT FOUND  - #[app.name]. Product Id #[flowVars.skuID] was not found. Inventory will not be updated. " priority="ERROR" doc:name="Cloudhub" />
+                    </when>
+                    <otherwise>
+                        <set-variable variableName="inventoryItemId" value="#[payload.invenproducts[0].id[0]]" doc:name="Set Inventory Item ID" />
+                        <logger message="Ecomm-order:The Inventory Item Id is : #[payload.invenproducts[0].id[0]]" level="INFO" doc:name="Log Inventory Item ID" />
+                    </otherwise>
+                </choice>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="proc-order_Inventory_Shopify_API_Sub_Flow">
+        <expression-transformer expression="#[dw(flowVars.destinationSchema,&quot;application/java&quot;)]" doc:name="Execute Dataweave Mapping " />
+        <expression-component doc:name="Set Location ID"><![CDATA[message.payload.location_id=flowVars.locationId]]></expression-component>
+        <expression-component doc:name="Set Inventory Item ID"><![CDATA[message.payload.inventory_item_id=flowVars.inventoryItemId]]></expression-component>
+        <expression-component doc:name="Set Avaiable Quantity"><![CDATA[message.payload.available=flowVars.availableQuantity]]></expression-component>
+        <logger message="Ecomm-order:The Inventory API Body is : #[payload]" level="DEBUG" doc:name="Logger" />
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+        <set-payload doc:name="Set Payload" value="#[payload]" mimeType="application/json" />
+        <http:request config-ref="Channel_HTTP_Request_Configuration" path="/admin/inventory_levels/set.json" method="POST" doc:name="Call Shopify Inventory API">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <logger message="Ecomm-order:HTTP Status is : #[message.inboundProperties['http.status']]" level="INFO" doc:name="Log HTTP Status" />
+        <logger message="Ecomm-order:HTTP Response is : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log HTTP Response" />
+        <choice doc:name="Check HTTP Status">
+            <when expression="#[message.inboundProperties['http.status'] == '200']">
+                <set-variable variableName="finalSuccessCount" value="#[flowVars.successCount+1]" doc:name="Success Count" />
+                <expression-component doc:name="Expression"><![CDATA[flowVars.successCount = flowVars.finalSuccessCount]]></expression-component>
+                <choice doc:name="Choice">
+                    <when expression="#[flowVars.finalSuccessCount == 1]">
+                        <logger message="Ecomm-order:First Loop" level="DEBUG" doc:name="For First Loop" />
+                        <expression-component doc:name="Expression"><![CDATA[flowVars.setCombinedresult = '"'+flowVars.successCount+'":' + payload]]></expression-component>
+                    </when>
+                    <otherwise>
+                        <logger message="Ecomm-order:Second and Another Loop" level="DEBUG" doc:name="For Second and More" />
+                        <expression-component doc:name="Expression"><![CDATA[flowVars.setCombinedresult = flowVars.setCombinedresult + ',  ' +  '"'+flowVars.successCount+'":' + payload]]></expression-component>
+                    </otherwise>
+                </choice>
+            </when>
+            <otherwise>
+                <logger message="Ecomm-order:Inventory for #[flowVars.productId] could not be updated. " level="INFO" doc:name="Logger" />
+                <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="INVENTORY UPDATE FAILURE - Inventory for #[flowVars.productId] could not be updated." priority="INFO" doc:name="Cloudhub" />
+                <flow-ref name="sendNotification_Flow" doc:name="sendNotification_Flow" />
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="sendNotification_Flow">
+        <logger level="INFO" doc:name="Logger" message="#[flowVars.notificationTracking] - #[app.name] . #[flowVars.noitificationMsg]" />
+        <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="#[flowVars.notificationTracking]  - #[app.name]. #[flowVars.noitificationMsg]" priority="INFO" doc:name="Send  Notification" />
+    </sub-flow>
+    <flow name="post:/sc/order:proc-prna-config">
+
+        <set-payload value="#[payload]" doc:name="Set Payload"/>
+        <json:json-to-object-transformer returnClass="java.util.Map"  doc:name="converting json payload to object"/>
+        <set-session-variable variableName="orderData" value="#[payload]" doc:name="set session order Data "/>
+        <db:select config-ref="Order_DB_Configuration" doc:name="Pull the warehouse API_KEY and API_Password from database">
+            <db:parameterized-query><![CDATA[SELECT W.API_KEY, W.API_PASSWORD FROM coreapi_ecomm_warehouse W WHERE W.WAREHOUSE_ID = #[message.inboundProperties.'http.query.params'.warehouse]]]></db:parameterized-query>
+        </db:select>
+        <expression-component doc:name="setting the session order data api_key and password "><![CDATA[sessionVars.orderData.api_key=payload[0].API_KEY;
+sessionVars.orderData.password=payload[0].API_PASSWORD;
+]]></expression-component>
+
+        <flow-ref name="post:/order:proc-prna-config" doc:name="call to /post:order Flow ref"/>
+    </flow>
+    <apikit:mapping-exception-strategy name="proc-prna-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Resource Not Found" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Method not allowed" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Media Type not supported" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Request can not be accepted coz of in valid Accept types" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CLIENT ERROR - Bad Request" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="402">
+            <apikit:exception value="java.net.NoRouteToHostException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Can not connect to Warehouse&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CONNECTION ERROR - Connection Error" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="403">
+            <apikit:exception value="java.sql.SQLException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Can not connect to Database&quot; }" doc:name="Set Payload" />
+            <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="#[app.name]" message="CONNECTION ERROR - Connection Error" priority="ERROR" doc:name="Cloudhub" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+  
+</mule>

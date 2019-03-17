@@ -1,0 +1,47 @@
+{
+  "shopify_hostname":"drinksandco-prusa-sandbox.myshopify.com",
+  "PurchaseDate":"2019-02-25",
+  "CustomerKey":"1220869259379",
+  "SalesOrderKey":"0f2a1723d998e8a6838174a13af8d60a",
+  "SalesTaxCollected":0,
+  "BillTo":{
+     "FirstName":"Rijuanul",
+     "LastName":"Incepta",
+     "Street1":"5045 Orbitor Drive",
+     "Street2":"5045 Orbitor Drive",
+     "City":"pennsylvania",
+     "State":"PA",
+     "Zip1":"15089",
+     "Country":"United States",
+     "Phone":"1 416-826-5514",
+     "Email":"asd@gmail.com",
+     "DateOfBirth":"1985-01-01"
+  },
+  "Shipments":[
+     {
+        "ShipDate":"2019-02-25",
+        "InsuredAmount":0,
+        "ShippingService":"Standard Shipping",
+        "ShipTo":{
+           "FirstName":"Rijuanul",
+           "LastName":"Incepta",
+           "Street1":"5045 Orbitor Drive",
+           "Street2":"",
+           "City":"pennsylvania",
+           "State":"PA",
+           "Zip1":"15089",
+           "Country":"United States",
+           "Phone":"1 416-826-5514",
+           "Email":"asd@gmail.com",
+           "DateOfBirth":"1985-01-01"
+        },
+        "LineItems":[
+           {
+              "ProductKey":"W0209",
+              "Quantity":1,
+              "UnitPrice":"14.00"
+           }
+        ]
+     }
+  ]
+}

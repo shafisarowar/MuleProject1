@@ -1,0 +1,421 @@
+#%RAML 0.8
+title: EComm PRNA Order API Experience
+version: 1.0
+baseUri: http://pr-na-app-coreapi.cloudhub.io/ux
+
+/order:
+ post:
+    description: send order request
+    queryParameters:
+      channel:
+        description: Channel name
+        required: true
+        type: string
+        example: elyx-us
+      warehouse:
+        description: Warehouse name
+        required: true
+        type: string
+        example: MM
+    body:
+      application/json:
+        example: |
+            {
+              "orderid":"10"  
+              "line_items": [
+                  {
+                    "id": 866550311766439000,
+                    "variant_id": null,
+                    "title": "Mini Pineapple Gift Set",
+                    "quantity": 1,
+                    "price": "150.00",
+                    "sku": "16003",
+                    "variant_title": null,
+                    "vendor": null,
+                    "fulfillment_service": "manual",
+                    "product_id": 8113327624
+                   }]
+              }
+    responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order has been placed successfully"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API."}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+
+/order/webhook:
+  post:
+    description: send order request
+    queryParameters:
+      channel:
+        description: Channel name
+        required: true
+        type: string
+        example: elyx-us
+      warehouse:
+        description: Warehouse name
+        required: true
+        type: string
+        example: MM
+    body:
+      application/json:
+        example: |
+            {
+              "orderid":"10"  
+              "line_items": [
+                  {
+                    "id": 866550311766439000,
+                    "variant_id": null,
+                    "title": "Mini Pineapple Gift Set",
+                    "quantity": 1,
+                    "price": "150.00",
+                    "sku": "16003",
+                    "variant_title": null,
+                    "vendor": null,
+                    "fulfillment_service": "manual",
+                    "product_id": 8113327624
+                   }]
+              }
+    responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order has been placed successfully"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API."}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+      
+/order/cancel:
+  post:
+      description: cancel order request
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+              {
+                  "strAccessCode":"SDGF886537522",
+                  "strUser":"TESTER",
+                  "CUSTOMER_ORDER_ID":"TEST12345",
+                  "LINE_NO":"*",
+              } 
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order have been cancelled successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API."}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+ 
+ 
+/order/webhook/cancel:
+  post:
+      description: cancel order request
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+              {
+                  "strAccessCode":"SDGF886537522",
+                  "strUser":"TESTER",
+                  "CUSTOMER_ORDER_ID":"TEST12345",
+                  "LINE_NO":"*",
+              } 
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order have been cancelled successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API."}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}           
+            
+/order/fulfillment:
+  post:
+      description: fulfillment update from warehouse to channel
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+              {  
+               "FULFILLMENT":{  
+                  "CUSTOMER_ORDER_ID":"495993585760",
+                  "TRACKING_NUMBERS":[  
+                     "aef12345",
+                     "70et734z"
+                  ]
+               }
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Shipment updated successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API. "}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+
+/order/webhook/fulfillment:
+  post:
+      description: fulfillment update from warehouse to channel
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+              {  
+               "FULFILLMENT":{  
+                  "CUSTOMER_ORDER_ID":"495993585760",
+                  "TRACKING_NUMBERS":[  
+                     "aef12345",
+                     "70et734z"
+                  ]
+               }
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Shipment updated successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API."}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+
+/product/inventory/update:
+  post:
+      description: Inventory update from warehouse to channel
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+                {
+                  "PRODUCT_IDS":
+                  [
+                      {
+                          "PRODUCT_ID": "8113327240",
+                          "QTY":"11"
+                      },
+                      {
+                          "PRODUCT_ID": "9346345928",
+                          "QTY":"5" 
+                      }
+                  ] 
+                }
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Invetory updated successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": "Invalid request or headers."}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": "The user is not authorized to use the API."}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": "The requested resource was not found."}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}                     

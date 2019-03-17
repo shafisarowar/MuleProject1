@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+    <apikit:config name="spendIT-config" raml="spendIT.raml" consoleEnabled="false" doc:name="Router"/>
+    <flow name="spendIT-main">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="/api/spendIT/*" doc:name="HTTPS"/>
+        <apikit:router config-ref="spendIT-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="spendIT-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="spendIT-console">
+        <http:listener config-ref="HTTPS_Listener_Configuration" path="/console/spendIT/*" doc:name="HTTPS"/>
+        <apikit:console config-ref="spendIT-config" doc:name="APIkit Console"/>
+    </flow>
+    <flow name="post:/actuals:application/json:spendIT-config">
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="businessUnits"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.businessUnits
+]]></dw:set-variable>
+            <dw:set-variable variableName="accounts"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.accounts]]></dw:set-variable>
+            <dw:set-variable variableName="actuals"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.actuals map {
+	"countryCode": $.countryCode,
+	"businessUnit": $.businessUnit,
+	"fiscalYear": $.fiscalYear as :number,
+	"month": $.month as :number,
+	"accountCode": $.accountCode,
+	"amount": $.amount as :number,
+	"invoiceCurrencyCode": $.invoiceCurrencyCode,
+	"deltaOrFullFY": $.deltaOrFullFY
+}]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="Ecommapi:SecurityFlow" doc:name="Ecommapi:SecurityFlow"/>
+        <validation:all config-ref="Validation_Configuration"
+			 doc:name="Validate Authorization &amp; Role" >
+            <validation:validations>
+                <validation:is-true expression="#[flowVars.EcommAPIAuthentication]"/>
+                <validation:matches-regex value="#[message.payload[0].ROLENAME]" regex="SPENDIT_USER"/>
+            </validation:validations>
+        </validation:all>
+        <enricher source="#[payload[0].NEXTVAL]" target="#[flowVars.batchID]" doc:name="Message Enricher">
+            <db:select config-ref="App_DB_Configuration"  doc:name="Get Batch ID">
+                <db:parameterized-query><![CDATA[SELECT jaguar.coreapi_spendit_seq.nextval from DUAL]]></db:parameterized-query>
+            </db:select>
+        </enricher>
+        <scatter-gather doc:name="Scatter-Gather">
+            <flow-ref name="InsertBusinessUnits" doc:name="InsertBusinessUnits"/>
+            <flow-ref name="InsertActuals" doc:name="InsertActuals"/>
+            <flow-ref name="InsertAccounts" doc:name="InsertAccounts"/>
+        </scatter-gather>
+        <set-payload value="{  &quot;message&quot;:&quot;OK&quot;,  &quot;details&quot;: {   &quot;batchID&quot;: #[flowVars.batchID],   &quot;numberOfBusinessUnitsInserted&quot;: #[flowVars.businessUnits.size()],   &quot;numberOfAccountsInserted&quot;: #[flowVars.accounts.size()],   &quot;numberOfActualsInserted&quot;: #[flowVars.actuals.size()]  } }" doc:name="Set Payload"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="#[exception.causedBy(java.sql.SQLException)]" doc:name="SQL Exception">
+                <set-property propertyName="http.status" value="500" doc:name="Property"/>
+                <choice doc:name="Choice">
+                    <when expression="#[flowVars.batchId!=empty]">
+                        <db:bulk-execute config-ref="App_DB_Configuration" doc:name="Delete All Entries From Database"><![CDATA[delete from jaguar.coreapi_spendit_business_unit where batch_id = #[flowVars.batchId];
+
+delete from jaguar.coreapi_spendit_account where batch_id = #[flowVars.batchId];
+
+delete from jaguar.coreapi_spendit_actual where batch_id = #[flowVars.batchId];
+]]></db:bulk-execute>
+                        <set-payload value="{ &quot;message&quot;: &quot;Database exception! No data has been inserted.&quot; }" mimeType="application/json" doc:name="Set Payload"/>
+                    </when>
+                    <otherwise>
+                        <set-payload value="{&quot;message&quot;: &quot;Database exception&quot;}" mimeType="application/json" doc:name="Set Payload"/>
+                    </otherwise>
+                </choice>
+            </catch-exception-strategy>
+            		<choice-exception-strategy doc:name="UnauthenticatedAccessExceptions">
+			<catch-exception-strategy when="#[flowVars.EcommAPIAuthentication==false]"
+				doc:name="Catch Authorization Exception">
+				<set-property propertyName="Content-type" value="application/json"
+					mimeType="application/java" doc:name="Content-type" />
+				<set-property propertyName="http.status" value="401"
+					doc:name="http.status" />
+				<set-payload value="{ &quot;message&quot;: &quot;Unauthorized Access&quot; }"
+					mimeType="application/json" doc:name="Set Error Payload" />
+			</catch-exception-strategy>
+            <catch-exception-strategy when="#[message.payload[0].ROLENAME!='SPENDIT_USER']" enableNotifications="false" logException="false" doc:name="Catch Invalid Role">
+                <set-property propertyName="Content-type" value="application/json" mimeType="application/java" doc:name="Content-type"/>
+                <set-property propertyName="http.status" value="403" doc:name="http.status"/>
+                <set-payload value="{ &quot;message&quot;: &quot;Access Denied&quot; }" mimeType="application/json" doc:name="Set Error Payload"/>
+            </catch-exception-strategy>
+		</choice-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <sub-flow name="InsertBusinessUnits">
+        <set-payload value="#[flowVars.businessUnits]" mimeType="application/java" doc:name="Set Payload"/>
+        <db:insert config-ref="App_DB_Configuration" bulkMode="true" doc:name="Database">
+            <db:parameterized-query><![CDATA[insert into JAGUAR.COREAPI_SPENDIT_BUSINESS_UNIT values (
+    #[flowVars.batchID],
+    #[payload.countryCode],
+    #[payload.businessUnit],
+    #[payload.businessUnitDesc],
+    #[payload.currencyCode],
+    SYSDATE,
+    'N'
+)]]></db:parameterized-query>
+        </db:insert>
+    </sub-flow>
+    <sub-flow name="InsertAccounts">
+        <set-payload value="#[flowVars.accounts]" doc:name="Set Payload"/>
+        <db:insert config-ref="App_DB_Configuration" bulkMode="true" doc:name="Database">
+            <db:parameterized-query><![CDATA[insert into JAGUAR.COREAPI_SPENDIT_ACCOUNT values (
+    #[flowVars.batchID],
+    #[payload.countryCode],
+    #[payload.accountCode],
+    #[payload.accountDesc],
+    SYSDATE,
+    'N'
+)]]></db:parameterized-query>
+        </db:insert>
+    </sub-flow>
+    <sub-flow name="InsertActuals">
+        <set-payload value="#[flowVars.actuals]" doc:name="Set Payload"/>
+        <db:insert config-ref="App_DB_Configuration" bulkMode="true" doc:name="Database">
+            <db:parameterized-query><![CDATA[insert into JAGUAR.COREAPI_SPENDIT_ACTUAL values (
+    #[flowVars.batchID],
+    #[payload.countryCode],
+    #[payload.businessUnit],
+    #[payload.fiscalYear],
+    #[payload.month],
+    #[payload.accountCode],
+    #[payload.amount],
+    #[payload.invoiceCurrencyCode],
+    #[payload.deltaOrFullFY],
+    SYSDATE,
+    'N'
+)]]></db:parameterized-query>
+        </db:insert>
+    </sub-flow>
+    <apikit:mapping-exception-strategy name="spendIT-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot;, &quot;details&quot;: &quot;#[exception.message.replace(&quot;\&quot;&quot;, &quot;'&quot;).replaceAll(&quot;\\r\\n|\\r|\\n|\\t&quot;, &quot; &quot;)]&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

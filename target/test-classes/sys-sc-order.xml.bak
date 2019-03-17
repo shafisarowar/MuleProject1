@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ws="http://www.mulesoft.org/schema/mule/ws" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ws http://www.mulesoft.org/schema/mule/ws/current/mule-ws.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    
+    <http:listener-config name="sys-sc-order-httpListenerConfig" host="0.0.0.0" port="8088" doc:name="HTTP Listener Configuration"/>
+    <apikit:config name="sys-sc-order-config" raml="sys/sys-sc-order.raml" consoleEnabled="false" doc:name="Router"/>
+    
+    <ws:consumer-config name="web_service_consumer_get_sales_order" wsdlLocation="SalesOrderService.wsdl" service="SalesOrderService" port="SalesOrderServiceSoap" serviceAddress="https://ws-test.shipcompliant.com/services/1.2/SalesOrderService.asmx" doc:name="Web Service Consumer" />
+    <ws:consumer-config name="Web_Service_Consumer_ChackComplianceAndCommitSalesOrder" wsdlLocation="SalesOrderService.wsdl" service="SalesOrderService" port="SalesOrderServiceSoap" serviceAddress="https://ws-test.shipcompliant.com/services/1.2/SalesOrderService.asmx" doc:name="Web Service Consumer" />
+    <ws:consumer-config name="Web_Service_Consumer_Shipment_Status" wsdlLocation="SalesOrderService.wsdl" service="SalesOrderService" port="SalesOrderServiceSoap" serviceAddress="https://ws-test.shipcompliant.com/services/1.2/SalesOrderService.asmx" doc:name="Web Service Consumer" />
+   <spring:beans>
+        <spring:bean id="ScAndShopifyResponse" name="invokeScAndShopifyResponse" class="coreapi.ScAndShopifyResponse"/>
+    </spring:beans>
+    <ws:consumer-config name="Web_Service_Consumer_compliance" wsdlLocation="SalesOrderService.wsdl" service="SalesOrderService" port="SalesOrderServiceSoap" serviceAddress="https://ws-test.shipcompliant.com/services/1.2/SalesOrderService.asmx" doc:name="Web Service Consumer"/>
+    <!--  -->
+ 	<flow name="sys-sc-order-main">
+       <http:listener config-ref="HTTPS_Listener_Configuration" path="${sys.sc.path}/*" doc:name="/sys">
+            <http:response-builder/>
+        </http:listener>
+        <apikit:router config-ref="sys-sc-order-config" doc:name="APIkit Router" />
+        <exception-strategy ref="sys-sc-order-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="sys-sc-order-console">
+         <http:listener config-ref="sys-sc-order-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="sys-sc-order-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="get:/getSalesOrder:sys-sc-order-config">
+        <flow-ref name="sys-sc-order_getSalesOrder_soapcall_Flow" doc:name="sys-sc-order_getSalesOrder_soapcall_Flow" />
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy logException="false" doc:name="Catch Exception Strategy">
+                <logger message="exception get sales order :: #[exception.getMessage()]" level="INFO" doc:name="Logger"/>
+                <set-payload value="{
+	&quot;GetSalesOrderResponse&quot;: {
+	  &quot;GetSalesOrderResult&quot;: {
+		  &quot;ResponseStatus&quot;: &quot;Error&quot;
+		  }
+	}
+}" mimeType="application/json" doc:name="return payload"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="post:/commitSalesOrder:sys-sc-order-config">
+        <flow-ref name="sys-sc-order_commitSalesOrder_Flow" doc:name="sys-sc-order_commitSalesOrder_Flow" />
+        <exception-strategy ref="sys-sc-commit-choice_exception_strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+   
+	<flow name="post:/modifyShopifyMetafield:sys-sc-order-config">
+         <set-payload value="#[payload]" doc:name="shopify modify metafield incoming payload"  />
+        <json:json-to-object-transformer returnClass="java.util.HashMap"  doc:name="convert JSON payload to Object" />
+        <set-session-variable variableName="shopifyMetafieldData" value="#[payload]" mimeType="application/java" doc:name="set object payload to session variable" />
+        <set-variable variableName="channel" value="#[message.inboundProperties.'http.query.params'.channel]" doc:name="put inbound properites value into variable" />
+        <flow-ref name="pull-shopify-info-databse" doc:name="call to shopify info database ref" />
+        <expression-component doc:name="prepare shopify require data"><![CDATA[String metafieldPath= ${sp.metafield.path};
+metafieldPath=metafieldPath.concat(sessionVars.shopifyMetafieldData.resource_type.toString());
+String  id= sessionVars.shopifyMetafieldData.resource_id.toString();
+String  join=metafieldPath.concat( "/".concat(id));
+String  fullPath=join.concat(${sp.metafield.type});
+
+flowVars.API_PATH=fullPath;
+
+flowVars.BASE_URL=payload[0].BASE_URL;
+flowVars.API_KEY=payload[0].API_KEY;
+flowVars.API_PASSWORD=payload[0].API_PASSWORD;]]></expression-component>
+        <set-payload value="{      &quot;metafield&quot;:   {             &quot;namespace&quot;: &quot;#[sessionVars.shopifyMetafieldData.customer]&quot;,           &quot;key&quot;: &quot;#[sessionVars.shopifyMetafieldData.field_name]&quot;,           &quot;value&quot;: &quot;#[sessionVars.shopifyMetafieldData.value]&quot;,            &quot;value_type&quot;: &quot;#[sessionVars.shopifyMetafieldData.type]&quot;       }  }" mimeType="application/json" doc:name="set shopify metafield payload" />
+        <http:request config-ref="Channel_HTTP_Request_Configuration" path="#[flowVars.API_PATH]" method="POST" doc:name="/ call to shopify to modify metafields" />
+        <set-payload value="{&quot;success&quot; : true}" doc:name="return payload"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy logException="false" doc:name="Catch Exception Strategy">
+                <logger message="exception modify shopify metafield :: #[exception.getMessage()]" level="INFO" doc:name="Logger"/>
+                <set-payload value="{&quot;success&quot; : false}" doc:name="return payload"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+
+    </flow>
+   
+ <flow name="post:/checkComplianceOfSalesOrder:sys-sc-order-config">
+         <set-payload value="#[payload]" doc:name="order compliance incoming payload" />
+        <json:json-to-object-transformer returnClass="java.util.HashMap"  doc:name="convert JSON payload to Object" />
+        <set-session-variable variableName="complianceData" value="#[payload]" doc:name="set object into session variable" />
+        <expression-component doc:name="formatting purchase date and Bill dateOfBirth"><![CDATA[org.mule.el.datetime.DateTime dateformat = new org.mule.el.datetime.DateTime(sessionVars.complianceData.PurchaseDate , 'yyyy-MM-dd');
+sessionVars.complianceData.PurchaseDate = dateformat;
+
+org.mule.el.datetime.DateTime dateformat = new org.mule.el.datetime.DateTime(sessionVars.complianceData.BillTo.DateOfBirth, 'yyyy-MM-dd');
+sessionVars.complianceData.BillTo.DateOfBirth = dateformat;
+
+]]></expression-component>
+        <foreach collection="#[sessionVars.complianceData.Shipments]" doc:name="For Each Shipments">
+            <expression-component doc:name="formatting Ship date and Ship to dateOfBirth"><![CDATA[org.mule.el.datetime.DateTime dateformat = new org.mule.el.datetime.DateTime(payload.ShipDate, 'yyyy-MM-dd');
+payload.ShipDate = dateformat;
+
+org.mule.el.datetime.DateTime dateformat = new org.mule.el.datetime.DateTime(payload.ShipTo.DateOfBirth, 'yyyy-MM-dd');
+payload.ShipTo.DateOfBirth = dateformat;
+
+]]></expression-component>
+        </foreach>
+        <logger message="order compliance data after date formatting :: #[sessionVars.complianceData]" level="INFO" doc:name="logger to see the order compliance data after date formatting"/>
+
+        <set-payload value="#[sessionVars.complianceData]" mimeType="application/java" doc:name="order compliance input payload " />
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload mimeType="application/java" />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://ws.shipcompliant.com/
+---
+{
+	ns0#CheckComplianceOfSalesOrder: {
+		ns0#Request: {
+			ns0#Security: {
+				ns0#PartnerKey: p('sc.partnerKey'),
+				ns0#Password: p('sc.password'),
+				ns0#Username: p('sc.userName')
+			},
+			ns0#AddressOption: {
+				ns0#IgnoreStreetLevelErrors: true,
+				ns0#RejectIfAddressSuggested: false
+			},
+			ns0#IncludeSalesTaxRates: false,
+			ns0#PersistOption: 'OverrideExisting',
+			ns0#FulfillmentType: 'Null',
+			ns0#SalesOrder: {
+				ns0#BillTo: {
+					ns0#City: payload.BillTo.City,
+					ns0#Country: payload.BillTo.Country,
+					ns0#DateOfBirth: (payload.BillTo.DateOfBirth as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+					ns0#Email: payload.BillTo.Email,
+					ns0#FirstName: payload.BillTo.FirstName,
+					ns0#LastName: payload.BillTo.LastName,
+					ns0#Phone: payload.BillTo.Phone,
+					ns0#State: payload.BillTo.State,
+					ns0#Street1: payload.BillTo.Street1,
+					ns0#Street2: payload.BillTo.Street2,
+					ns0#Zip1: payload.BillTo.Zip1
+				},
+				ns0#CustomerKey: payload.CustomerKey,
+				ns0#OrderType: 'Internet',
+				ns0#PurchaseDate: (payload.PurchaseDate  as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+				ns0#SalesOrderKey: payload.SalesOrderKey,
+				ns0#SalesTaxCollected: payload.SalesTaxCollected,
+				ns0#Shipments: {
+					(payload.Shipments map ((shipment , indexOfShipment) -> {
+						ns0#Shipment: {
+							ns0#FulfillmentHouse: 'WineShipping',
+							ns0#InsuredAmount: shipment.InsuredAmount,
+							ns0#ShipmentStatus: 'InProcess',
+							ns0#LicenseRelationship: 'Default',
+							ns0#ShipDate: (shipment.ShipDate  as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+							ns0#ShipmentItems: {
+								(shipment.LineItems map ((lineItem , indexOfLineItem) -> {
+									ns0#ShipmentItem: {
+										ns0#ProductKey: lineItem.ProductKey,
+										ns0#ProductQuantity: lineItem.Quantity as :number,
+										ns0#ProductUnitPrice: lineItem.UnitPrice as :number
+									}
+								}))
+							},
+							ns0#ShippingService: 'UPS',
+							ns0#ShipTo: {
+								ns0#City: shipment.ShipTo.City,
+								ns0#Country: shipment.ShipTo.Country,
+								ns0#DateOfBirth: (shipment.ShipTo.DateOfBirth  as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+								ns0#Email: shipment.ShipTo.Email,
+								ns0#FirstName: shipment.ShipTo.FirstName,
+								ns0#LastName: shipment.ShipTo.LastName,
+								ns0#Phone: shipment.ShipTo.Phone,
+								ns0#State: shipment.ShipTo.State,
+								ns0#Street1: shipment.ShipTo.Street1,
+								ns0#Street2: shipment.ShipTo.Street2,
+								ns0#Zip1: shipment.ShipTo.Zip1
+							}
+						}
+					}))
+				}
+			}
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="order compliance input data with xml format :: #[payload]" level="INFO" doc:name="logger to see order compliance xml format input data "/>
+        <ws:consumer config-ref="Web_Service_Consumer_compliance" operation="CheckComplianceOfSalesOrder" doc:name="order compliance web service consumer" />
+        <json:xml-to-json-transformer doc:name="check compliance of sales order response converting from XML to JSON" />
+        <logger message="check compliance of sales order response :: #[payload]" level="INFO" doc:name="check compliance of sales order response write in logger"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" mimeType="application/java" doc:name="check compliance of sales order response convert JSON to Object"/>
+        <flow-ref name="sys-sc-order-compliance-response-flow" doc:name="/ call to order compliance response flow ref"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy doc:name="Catch Exception Strategy" logException="false">
+                <logger message="check compliance and sales order exception :: #[exception.getMessage()]" level="INFO" doc:name="Logger"/>
+                <set-payload value="{  &quot;errors&quot; :  &quot;Remote error calling ShipCompliant API.&quot;,  &quot;statusCode&quot; : 500 }" mimeType="application/json" doc:name="return payload"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+
+    </flow>
+     <sub-flow name="sys-sc-order-compliance-response-flow">
+
+        <choice doc:name="order compliance response status check">
+            <when expression="#[payload.CheckComplianceOfSalesOrderResponse.CheckComplianceOfSalesOrderResult.ResponseStatus == 'Failure']">
+                <logger level="INFO" doc:name="response status failure logger" message="Response Status :: Failure "/>
+                <foreach collection="#[payload.CheckComplianceOfSalesOrderResponse.CheckComplianceOfSalesOrderResult.Errors.Error]" doc:name="Error For Each">
+                    <logger message=" 'Code' : #[payload.Code], 'Target' :  #[payload.Target], 'Type' :  #[payload.Type], 'Message' : #[payload.Message]" level="ERROR" doc:name="order compliance response error log"/>
+                </foreach>
+                <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="response status success" message="Response status :: Success"/>
+                <set-variable variableName="isCompliant" value="#[payload.CheckComplianceOfSalesOrderResponse.CheckComplianceOfSalesOrderResult.SalesOrder.IsCompliant]" doc:name="set IsCompliant value"/>
+                <choice doc:name="check order compliance IsCompliant ">
+                    <when expression="#[flowVars.isCompliant==true]">
+                        <logger level="INFO" doc:name="IsCompliant is true" message="IsCompliant True"/>
+                        <set-payload value="{
+	&quot;compliant&quot;: #[flowVars.isCompliant]
+}" mimeType="application/json" doc:name="return payload"/>
+                    </when>
+                    <otherwise>
+                        <logger level="INFO" doc:name="IsCompliant is False" message="IsCompliant False"/>
+                        <set-variable variableName="tagsArrayVar" value="#[[]]" doc:name="failedArrayVar"/>
+                        <foreach collection="#[payload.CheckComplianceOfSalesOrderResponse.CheckComplianceOfSalesOrderResult.SalesOrder.Shipments.ShipmentComplianceResponse.Rules]" doc:name="Rules For Each">
+                            <foreach collection="#[payload]" doc:name="For Each">
+                                <expression-component doc:name="adding rule type"><![CDATA[if(payload.IsCompliant == false) {
+	flowVars.tagsArrayVar.add('"'+payload.RuleType.toString()+'"');
+}]]></expression-component>
+                            </foreach>
+
+                        </foreach>
+                        <logger message="order compliance failed array :: #[flowVars.tagsArrayVar]" level="INFO" doc:name="order compliance failed array Log"/>
+                        <set-payload value="{  &quot;compliant&quot;: #[flowVars.isCompliant],  &quot;reasons&quot;: #[flowVars.tagsArrayVar]   }" mimeType="application/json" doc:name="return payload"/>
+                    </otherwise>
+                </choice>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    
+    <choice-exception-strategy name="sys-sc-commit-choice_exception_strategy">
+        <catch-exception-strategy doc:name="Catch Exception Strategy-DB" when="java.sql.SQLException" logException="false">
+            <logger message="Failed to Connect with Database" level="ERROR" doc:name="Logger" />
+            <flow-ref name="sys-sc-commitSales-exception-flow" doc:name="call to commitSales exception flow ref" />
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Catch Exception Strategy" when="#[exception.causeMatches('com.mulesoft.weave.*')]" logException="false">
+            <logger message="DataWeave Exception" level="ERROR" doc:name="Logger" />
+            <flow-ref name="sys-sc-commitSales-exception-flow" doc:name="call to commitSales exception flow ref" />
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Catch Exception Strategy" when="#[exception.causeMatches('org.mule.api.expression.*')]" logException="false">
+            <logger message="Expression Runtime Exception" level="INFO" doc:name="Logger" />
+            <flow-ref name="sys-sc-commitSales-exception-flow" doc:name="call to commitSales exception flow ref" />
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Catch Exception Strategy" logException="false">
+            <logger level="ERROR" doc:name="Logger" message="commit sales order exception :: #[exception.getMessage()]" />
+            <flow-ref name="sys-sc-commitSales-exception-flow" doc:name="call to commitSales exception flow ref" />
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+    
+    <sub-flow name="sys-sc-commitSales-exception-flow">
+        <invoke object-ref="invokeScAndShopifyResponse" method="setScCommitResponse" methodArguments="false" methodArgumentTypes="boolean" doc:name="Java: Invoke setScCommitResponse()"/>
+        <flow-ref name="sys-sc-set-proc-return-response-flow" doc:name="sys-sc-set-proc-return-response-flow"/>
+    </sub-flow>
+    <!--  -->
+    <sub-flow name="sys-sc-order_getSalesOrder_soapcall_Flow">
+        <set-variable variableName="sales_order_key" value="#[message.inboundProperties.'http.query.params'.key]" doc:name="set sales order key query parameter"/>
+<!-- 
+        <expression-component doc:name="Get_SC_Credentials"><![CDATA[sessionVars.userName = ${sc.userName};
+sessionVars.password =  ${sc.password};
+sessionVars.partnerKey = ${sc.partnerKey};]]></expression-component> -->
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://ws.shipcompliant.com/
+---
+{
+	ns0#GetSalesOrder: {
+		ns0#Request: {
+			ns0#Security: {
+				ns0#PartnerKey: p('sc.partnerKey'),
+				ns0#Password: p('sc.password'),
+				ns0#Username: p('sc.userName')
+			},
+			ns0#SalesOrderKey: flowVars.sales_order_key
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="ShipCompliant input getSales Order :: #[payload] " level="INFO" doc:name="writting log for shipCompliant - get sales order  "/>
+        <ws:consumer config-ref="web_service_consumer_get_sales_order" operation="GetSalesOrder" doc:name="web service call to shipcompliant for getting sales order"/>
+
+
+        <json:xml-to-json-transformer doc:name="sales order conversion from xml to json" />
+        <logger message="Sales Order Response:: #[payload]" level="INFO" doc:name="writting the log for sales order response"/>
+
+    </sub-flow>
+  
+    <sub-flow name="sys-sc-order_commitSalesOrder_Flow">
+
+     <!--    <expression-component doc:name="Get_SC_Credentials"><![CDATA[sessionVars.userName = ${sc.userName};
+sessionVars.password =  ${sc.password};
+sessionVars.partnerKey = ${sc.partnerKey};]]></expression-component>--> 
+
+        <json:json-to-object-transformer returnClass="java.util.HashMap" mimeType="application/java" doc:name="value of proc API converted from json to object" />
+        <logger message="destination schema with value :: #[payload]" level="INFO" doc:name="writting log after converting the json to object"/>
+        <set-session-variable variableName="scCommitData" value="#[payload]" doc:name="save converted object in session variable" />
+        <expression-component doc:name="set orderID,channel,warehouse,API_key and API_Password in flow variable"><![CDATA[flowVars.orderID=payload.orderID;
+flowVars.channel=payload.channel;
+flowVars.warehouse=payload.warehouse;
+flowVars.WH_API_KEY=payload.API_KEY;
+flowVars.WH_API_Password=payload.API_Password;]]></expression-component>
+        <expression-component doc:name="remove quotes  from date string"><![CDATA[//ShipDate 
+String replaceDateQuotos=sessionVars.scCommitData.shipment.ShipDate;
+sessionVars.scCommitData.shipment.ShipDate= replaceDateQuotos.replace('"','');
+
+//BillToDateOfBirth
+replaceDateQuotos=sessionVars.scCommitData.BillToDateOfBirth;
+sessionVars.scCommitData.BillToDateOfBirth= replaceDateQuotos.replace('"','');
+
+//ShipToDateOfBirth
+replaceDateQuotos=sessionVars.scCommitData.shipment.ShipToDateOfBirth;
+sessionVars.scCommitData.shipment.ShipToDateOfBirth= replaceDateQuotos.replace('"','');]]></expression-component>
+        <flow-ref name="db_check_for_API_KEY_AND_API_PASSWORD" doc:name="db_check_for_API_KEY_AND_API_PASSWORD"/>
+        <choice doc:name="DB Validation Check for API_KEY And API_Password">
+            <when expression="#[flowVars.isExist == true]">
+                <flow-ref name="sc_checkComplianceAndCommitSalesOrder" doc:name="sc_checkComplianceAndCommitSalesOrder"/>
+            </when>
+            <otherwise>
+                <logger message="DB check failed :: API_KEY and API_Passowrd doesn't match" level="ERROR" doc:name="writting log for false db check"/>
+                <invoke object-ref="invokeScAndShopifyResponse" method="setScCommitResponse" methodArguments="false" doc:name="Java: Invoke setScCommitResponse()" methodArgumentTypes="boolean"/>
+            </otherwise>
+        </choice>
+        <flow-ref name="sys-sc-set-proc-return-response-flow" doc:name="sys-sc-set-proc-return-response-flow"/>
+
+        <!--  <validation:is-true expression="#[flowVars.isExist]" doc:name="validation check if API_KEY And API_Password match " message="#[message]" config-ref="Validation_Configuration" />-->
+
+        <!--     <amqp:outbound-endpoint exchangeName="amqp.mn.CommitSalesOrder.Ex" queueName="${sys.sc.commitSalesOrder.queue}" exchangeType="fanout" responseTimeout="10000" exchange-pattern="request-response" connector-ref="AMQP_0_9_Connector_commitSalesOrder" ref="AMQP_0_9-Connector-commitSalesOrder" doc:name="sc_commitSalesOrder_publisher"/>-->
+    </sub-flow>
+    <sub-flow name="db_check_for_API_KEY_AND_API_PASSWORD">
+        <db:select config-ref="Order_DB_Configuration" doc:name="pull warehouse information from database">
+            <db:parameterized-query><![CDATA[SELECT W.API_KEY, W.API_PASSWORD FROM coreapi_ecomm_warehouse W WHERE 
+W.WAREHOUSE_ID = #[flowVars.warehouse]]]></db:parameterized-query>
+
+        </db:select>
+        <set-variable variableName="isExist" value="#[flowVars.WH_API_KEY == payload[0].API_KEY &amp;&amp; flowVars.WH_API_Password == payload[0].API_Password]" doc:name="set boolean value if API_KEY And API_Password mactch"/>
+    </sub-flow>
+    <sub-flow name="sc_checkComplianceAndCommitSalesOrder">
+        <logger message="checkComplianceAndCommitSales Order :: #[sessionVars.scCommitData]" level="INFO" doc:name="writting log for checkComplianceAndCommitSales Order payload"/>
+        <set-payload value="#[sessionVars.scCommitData]" doc:name="Set Payload" mimeType="application/java" />
+        <dw:transform-message doc:name="Transform Message"  metadata:id="a789217a-9cf6-46d9-b5b6-628e479db502">
+            <dw:input-payload mimeType="application/java"  doc:sample="sc_data\sc_req.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://ws.shipcompliant.com/
+---
+{
+	ns0#CheckComplianceOfAndCommitSalesOrder: {
+		ns0#Request: {
+			ns0#Security: {
+				ns0#PartnerKey: p('sc.partnerKey'),
+				ns0#Password: p('sc.password'),
+				ns0#Username: p('sc.userName')
+			},
+			ns0#AddressOption: {
+				ns0#IgnoreStreetLevelErrors: true,
+				ns0#RejectIfAddressSuggested: false
+			},
+			ns0#CommitOption: 'AllShipments',
+			ns0#IncludeSalesTaxRates: false,
+			ns0#PersistOption: 'OverrideExisting',
+			ns0#SalesOrder: {
+				ns0#BillTo: {
+					ns0#City: payload.BillToCity,
+					ns0#Company: payload.BillToCompany,
+					ns0#Country: payload.BillToCountry,
+					ns0#DateOfBirth: (payload.BillToDateOfBirth as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+					ns0#Email: payload.BillToEmail,
+					ns0#FirstName: payload.BillToFirstName,
+					ns0#LastName: payload.BillToLastName,
+					ns0#Phone: payload.BillToPhone,
+					ns0#State: payload.BillToState,
+					ns0#Street1: payload.BillToStreet1,
+					ns0#Street2: payload.BillToStreet2,
+					ns0#Zip1: payload.BillToZip1,
+					ns0#Zip2: payload.BillToZip2
+				},
+				ns0#CustomerKey: payload.CustomerKey,
+				ns0#PurchaseDate: now as :datetime {format: "MM-dd-yyyy'T'HH:mm:ss"},
+				ns0#SalesOrderKey: payload.SalesOrderKey,
+				ns0#SalesTaxCollected: payload.SalesTaxCollected,
+				ns0#FulfillmentType: 'Null',
+				ns0#OrderType: 'Internet',
+				ns0#Shipments: {
+					ns0#Shipment: {
+						ns0#ShipmentStatus: 'InProcess',
+						ns0#LicenseRelationship: 'Default',
+						ns0#FulfillmentHouse: payload.shipment.FulfillmentHouse,
+						ns0#GiftNote: payload.shipment.GiftNote,
+						ns0#InsuredAmount: payload.shipment.InsuredAmount,
+						ns0#ShipDate:  (payload.shipment.ShipDate as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+						ns0#ShipmentItems: { (payload.shipment.lineItems map ((item,index) -> {
+							ns0#ShipmentItem: {
+								ns0#ProductKey: item.ProductKey,
+								ns0#ProductQuantity: item.ProductQuantity as :number,
+								ns0#ProductUnitPrice: item.ProductUnitPrice as :number
+								}
+							  }
+							))
+						},
+						ns0#Shipping: payload.shipment.Shipping,
+						ns0#ShippingService: payload.shipment.ShippingService,
+						ns0#ShipTo: {
+							ns0#City: payload.shipment.ShipToCity,
+							ns0#Company: payload.shipment.ShipToCompany,
+							ns0#Country: payload.shipment.ShipToCountry,
+							ns0#DateOfBirth: (payload.shipment.ShipToDateOfBirth as :localdatetime{format: "yyyy-MM-dd'T'HH:mm:ss'Z'"} as :string {format: "yyyy-MM-dd'T'HH:mm:ss"} >> "UTC"),
+							ns0#Email: payload.shipment.ShipToEmail,
+							ns0#FirstName: payload.shipment.ShipToFirstName,
+							ns0#LastName: payload.shipment.ShipToLastName,
+							ns0#Phone: payload.shipment.ShipToPhone,
+							ns0#State: payload.shipment.ShipToState,
+							ns0#Street1: payload.shipment.ShipToStreet1,
+							ns0#Street2: payload.shipment.ShipToStreet2,
+							ns0#Zip1: payload.shipment.ShipToZip1,
+							ns0#Zip2: payload.shipment.ShipToZip2
+						}
+					}
+				}
+			}
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="input checkComplianceAndCommitSalesOrder :: #[payload]" level="INFO" doc:name="wrtitting log for  shipcompliant checkComplianceAndCommitSalesOrder"/>
+        <ws:consumer config-ref="Web_Service_Consumer_ChackComplianceAndCommitSalesOrder" operation="CheckComplianceOfAndCommitSalesOrder" doc:name="CheckComplianceAndCommitSalesOrder web service call"/>
+
+
+        <!--  <amqp:inbound-endpoint queueName="${sys.sc.commitSalesOrder.queue}" exchangeType="direct" exchangeDurable="true" queueDurable="true" responseTimeout="10000" connector-ref="AMQP_0_9_Connector_commitSalesOrder" ref="AMQP_0_9-Connector-commitSalesOrder" doc:name="AMQP-0-9-commitSalesOrder-Consumer" exchangeName="amqp.mn.CommitSalesOrder.Ex" exchange-pattern="request-response"/> -->
+
+        <json:xml-to-json-transformer doc:name="CheckComplianceAndCommitSalesOrder response conversion xml to json" />
+
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Convert the payload to Map Object" />
+        <logger message="CheckComplianceAndCommitSalesOrder Response :: #[payload]" level="INFO" doc:name="writting the payload in log"/>
+        <flow-ref name="sys-sc-order-commitSalesOrder-response-flow" doc:name="sys-sc-order-commitSalesOrder-response-flow" />
+    </sub-flow>
+ <flow name="sys-sc-order-commitSalesOrder-response-flow">
+
+        <set-variable variableName="isValid" value="" doc:name="Set response-validation-result-var" />
+        <flow-ref name="sys-sc-order-response-validation-subflow" doc:name="sys-sc-order-response-validation-subflow" />
+        <choice doc:name="Checking ShipCompliance Response ">
+            <when expression="#[flowVars.isValid == true]">
+                <flow-ref name="sys-sc-order-response-modify-flow" doc:name="sys-sc-order-response-modify-flow"/>
+                <invoke object-ref="invokeScAndShopifyResponse" method="setScCommitResponse" methodArguments="true" doc:name="Java: Invoke setScCommitResponse()" methodArgumentTypes="boolean"/>
+                <flow-ref name="sys-sc-shopify_modifyOrder_Flow" doc:name="sys-sc-shopify_modifyOrder_Flow"/>
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="writting log for shipcomplince response" message="ShipCompliance Response Status  :: ShipCompliance response failed. Validation Failed"/>
+
+            </otherwise>
+        </choice>
+        <!--  <validation:is-true config-ref="Validation_Configuration" expression="#[flowVars.isValid]" doc:name="Validation checking for response status" />-->
+
+    </flow>
+    <sub-flow name="sys-sc-order-response-validation-subflow">
+        <logger message="Validate Compliace Response Status :: #[payload.CheckComplianceOfAndCommitSalesOrderResponse.CheckComplianceOfAndCommitSalesOrderResult.ResponseStatus]" level="INFO" doc:name="writting log to check Compliace Response Status" />
+        <choice doc:name="CheckCompliaceAndCommitSales Order Response Status Check">
+            <when expression="#[payload.CheckComplianceOfAndCommitSalesOrderResponse.CheckComplianceOfAndCommitSalesOrderResult.ResponseStatus == 'Failure']">
+                <logger message="Failure Resposne" level="ERROR" doc:name="Failure Resposne Log" />
+                <foreach collection="#[payload.CheckComplianceOfAndCommitSalesOrderResponse.CheckComplianceOfAndCommitSalesOrderResult.Errors]" doc:name="Error For Each">
+
+                    <logger message=" 'Code' : #[payload.Code], 'Target' :  #[payload.Target], 'Type' :  #[payload.Type], 'Message' : #[payload.Message]" level="ERROR" doc:name="Error Log" />
+                </foreach>
+                <expression-component doc:name="Setting validation false"><![CDATA[flowVars.isValid = false;]]></expression-component>
+            </when>
+            <otherwise>
+                <logger message="Response Success" level="INFO" doc:name="Success Response Log" />
+                <expression-component doc:name="Setting validation true"><![CDATA[flowVars.isValid = true;]]></expression-component>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <flow name="sys-sc-order-response-modify-flow">
+        <set-session-variable variableName="salesOrder" value="#[payload.CheckComplianceOfAndCommitSalesOrderResponse.CheckComplianceOfAndCommitSalesOrderResult.SalesOrder]" doc:name="set salesOrder into session" />
+        <set-session-variable variableName="responseSalesOrderKey" value="#[sessionVars.salesOrder.Key]" doc:name="set response sales order key" />
+        <set-session-variable variableName="responseShipmentKey" value="#[sessionVars.salesOrder.Shipments.ShipmentComplianceResponse.Key]" doc:name="set response shipment key" />
+        <logger message="Response Sales Order :: #[sessionVars.salesOrder];" level="INFO" doc:name="Response Sales Order Log" />
+        <set-variable variableName="tagsVar" value="#[sessionVars.scCommitData.tags]" doc:name="Set tags variable" />
+        <set-session-variable variableName="tagsArrayVar" value="#[flowVars.tagsVar!=null ? new java.util.ArrayList(Arrays.asList(org.mule.util.StringUtils.split(flowVars.tagsVar,&quot;, &quot;))) : []]" doc:name="Set tagsArray-var" />
+        <logger message="Tags Array Size:: #[sessionVars.tagsArrayVar.size()]" level="DEBUG" doc:name="Tags Array Size Log" />
+        <flow-ref name="sys-sc-order-response-isCompliant-flow" doc:name="sys-sc-order-response-isCompliant-flow" />
+        <!--         <flow-ref name="sys-sc-order-response-isCompliant-flow" doc:name="sys-sc-order-response-is-compliant-flow-ref"/> -->
+    </flow>
+    <flow name="sys-sc-order-response-isCompliant-flow">
+        <choice doc:name="Checking Sales Order IsCompliant">
+            <when expression="#[sessionVars.salesOrder.IsCompliant == true]">
+                <logger message="Compliant True" level="INFO" doc:name="Compliant True Log" />
+                <expression-component doc:name="Adding IsCompliant into Array"><![CDATA[sessionVars.tagsArrayVar.add("IsCompliant");]]></expression-component>
+                <flow-ref name="sys-sc-order-response-set-shipment-status-flow" doc:name="sys-sc-order-response-set-shipment-status-flow" />
+            </when>
+            <otherwise>
+                <logger message="Compliant False" level="ERROR" doc:name="Compliant False Log" />
+                <expression-component doc:name="Adding NotCompliant into Array"><![CDATA[sessionVars.tagsArrayVar.add("NotCompliant");]]></expression-component>
+                <logger message="tags array with Not compliant :: #[payload]" level="INFO" doc:name="writting tags array into log " />
+                <flow-ref name="sys-sc-order-response-getComplianceError-flow" doc:name="sys-sc-order-response-getComplianceError-flow" />
+            </otherwise>
+        </choice>
+
+    </flow>
+    <flow name="sys-sc-order-response-set-shipment-status-flow">
+
+        <dw:transform-message doc:name="Transform Message"  metadata:id="addd6c1e-b6f5-4894-866d-0a28f60fe457">
+            <dw:input-payload />
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://ws.shipcompliant.com/
+---
+{
+	ns0#UpdateShipmentStatus: {
+		ns0#Request: {
+			ns0#Security: {
+				ns0#PartnerKey: p('sc.partnerKey'),
+				ns0#Password: p('sc.password'),
+				ns0#Username: p('sc.userName')
+			},
+			ns0#SalesOrderKey: sessionVars.responseSalesOrderKey,
+			ns0#ShipmentKey: sessionVars.responseShipmentKey,
+			ns0#ShipmentStatus: 'SentToFulfillment'
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="shipment status input data :: #[payload]" level="INFO" doc:name="writting log for shipcompliant shipment status"/>
+        <ws:consumer config-ref="Web_Service_Consumer_Shipment_Status" operation="UpdateShipmentStatus" doc:name="Update Shipment Status web service call"/>
+
+
+        <json:xml-to-json-transformer doc:name="update shipment status conversion from xml to json" />
+        <logger message="shipment status response :: #[payload]" level="INFO" doc:name="writting payload in Log"/>
+
+    </flow>
+    <flow name="sys-sc-order-response-getComplianceError-flow">
+
+        <set-variable variableName="failedMap" value="#[new java.util.HashMap()]" doc:name="create failed array " />
+        <foreach collection="#[payload.CheckComplianceOfAndCommitSalesOrderResponse.CheckComplianceOfAndCommitSalesOrderResult.SalesOrder.Shipments.ShipmentComplianceResponse.Rules.RuleComplianceResponse]" doc:name="Rules For Each">
+            <expression-component doc:name="adding rule type"><![CDATA[if(payload.IsCompliant == false) {
+	flowVars.failedMap.put(payload.RuleType.toString(), payload);
+}]]></expression-component>
+        </foreach>
+        <foreach collection="#[flowVars.failedMap.keySet()]" doc:name="failed array For Each">
+            <expression-component doc:name="adding compliance error key into tags array"><![CDATA[sessionVars.tagsArrayVar.add("ComplianceError:"+payload);]]></expression-component>
+        </foreach>
+        <logger message="tags array :: #[sessionVars.tagsArrayVar]" level="INFO" doc:name="tags array Log" />
+        <!--         <dw:transform-message doc:name="Transform Message"> -->
+        <!--             <dw:set-variable variableName="ReducedArray"><![CDATA[%dw 1.0 -->
+        <!-- %output application/java -->
+        <!-- -->
+        <!-- payload reduce ((val,ReducedArray) ->  -->
+        <!-- 	val.Rules.RuleComplianceResponse reduce ((val1,ReducedArray) ->  -->
+        <!-- 		{(ReducedArray map {"val1.RuleType": val1} when val1.Rules.IsCompliant == false otherwise System.out.println("No"))} -->
+        <!-- 	) -->
+        <!-- ) -->
+        <!-- ]]></dw:set-variable> -->
+        <!--         </dw:transform-message> -->
+    </flow>
+    <sub-flow name="sys-sc-shopify_modifyOrder_Flow">
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	order: {
+		id: flowVars.orderID,
+		tags: sessionVars.tagsArrayVar joinBy ","
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="shopifyBody" value="#[payload]" doc:name="set shopify body" />
+        <logger message="shopify payload :: #[payload]" level="INFO" doc:name="writting log for shopify payload"/>
+
+        <db:select config-ref="Order_DB_Configuration" doc:name="pull channel information from database">
+            <db:parameterized-query><![CDATA[SELECT C.BASE_URL, C.API_KEY, C.API_PASSWORD FROM coreapi_ecomm_channel C
+WHERE C.CHANNEL_ID = #[flowVars.channel]]]></db:parameterized-query>
+
+        </db:select>
+
+        <expression-component doc:name="prepare shopify require data"><![CDATA[String orderpath= ${sp.order.path};
+String  id= flowVars.orderID. toString();
+String  join=orderpath.concat(id);
+String  fullPath=join.concat(${sp.type});
+
+flowVars.API_PATH=fullPath;
+
+flowVars.BASE_URL=payload[0].BASE_URL;
+flowVars.API_KEY=payload[0].API_KEY;
+flowVars.API_PASSWORD=payload[0].API_PASSWORD;
+
+]]></expression-component>
+        <set-payload value="#[flowVars.shopifyBody]" doc:name="set shopify payload" mimeType="application/json" />
+       <http:request config-ref="Channel_HTTP_Request_Configuration" path="#[flowVars.API_PATH]" method="PUT" doc:name="call to shopify to modify the order" >
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json"/>
+
+            </http:request-builder>
+
+        </http:request>
+        <flow-ref name="sys-sc-set-proc-return-response-flow" doc:name="sys-sc-set-proc-return-response-flow"/>
+    </sub-flow>
+    <sub-flow name="pull-shopify-info-databse">
+        <db:select config-ref="Order_DB_Configuration" doc:name="pull channel information from database">
+            <db:parameterized-query><![CDATA[SELECT C.BASE_URL, C.API_KEY, C.API_PASSWORD FROM coreapi_ecomm_channel C
+WHERE C.CHANNEL_ID = #[flowVars.channel]]]></db:parameterized-query>
+
+        </db:select>
+    </sub-flow>
+    <sub-flow name="sys-sc-set-proc-return-response-flow">
+        <set-property propertyName="http.status" value="200" doc:name="Property"/>
+        <set-payload value="{  &quot;message&quot; : &quot;Order has been placed successfully&quot;,  &quot;SUCCESS&quot; : true  }" doc:name="Set Payload"/>
+    </sub-flow>
+    
+    <apikit:mapping-exception-strategy name="sys-sc-order-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

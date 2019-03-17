@@ -1,0 +1,354 @@
+#%RAML 0.8
+title: EComm PRNA Order API Process
+version: 1.0
+baseUri: http://pr-na-app-coreapi.cloudhub.io/proc
+
+
+/order:
+  post:
+    description: send order request
+    queryParameters:
+      channel:
+        description: Channel name
+        required: true
+        type: string
+        example: elyx-us
+      warehouse:
+        description: Warehouse name
+        required: true
+        type: string
+        example: MM
+    body:
+      application/json:
+        example: |
+            {
+            "strAccessCode":"SDGF886537522",
+            "strUser":"TESTER",
+            "CUSTOMER_ORDER_ID":"TEST12345",
+            "LINE_NO":"1",
+            "ORDER_DATE":"11/25/2017",
+            "SHIP_TO_NAME1":"Ian",
+            "SHIP_TO_NAME2":"Rush",
+            "SHIP_TO_ADDRESS_1":"3768 Milliken Avenue # A",
+            "SHIP_TO_ADDRESS_2":"",
+            "SHIP_TO_CITY":"Eastvale",
+            "SHIP_TO_STATE":"CA",
+            "SHIP_TO_ZIPCODE":"91752",
+            "SHIP_TO_COUNTRY_CODE":"US",
+            "SHIP_TO_PHONE":"(909) 930-0800",
+            "BILL_TO_NAME1":"Ian",
+            "BILL_TO_NAME2":"Rush",
+            "BILL_TO_ADDRESS_1":"3768 Milliken Avenue # A ",
+            "BILL_TO_ADDRESS_2":"",
+            "BILL_TO_CITY":" Eastvale ",
+            "BILL_TO_STATE":"CA",
+            "BILL_TO_ZIPCODE":"91752",
+            "BILL_TO_COUNTRY_CODE":"US",
+            "BILL_TO_PHONE":"(909) 930-0800",
+            "SHIP_TO_EMAIL":"Ian_Rush@mentormedia.com",
+            "PRODUCT_ID":" TEST-SKU_1",
+            "SNO":"",
+            "QTY":"5",
+            "COMPANY_NAME":"Mentor Media Ltd",
+            "COMPANY_VAT_ID":"",
+            "SHIP_CARRIER":"3001",
+            "SHIP_SERVICE":"PREPAID",
+            "SHIP_ACCOUNT":"",
+            "ORDER_NOTES":"",
+            "CARRIER_NOTES":"",
+            "USER_3":""
+            }
+    responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order has been placed successfully"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": â€œInvalid request or headers.â€�}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe user is not authorized to use the API. â€�}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe requested resource was not found.â€�}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+      
+/order/cancel:
+  post:
+      description: cancel order request
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+              {
+                  "strAccessCode":"SDGF886537522",
+                  "strUser":"TESTER",
+                  "CUSTOMER_ORDER_ID":"TEST12345",
+                  "LINE_NO":"*",
+              } 
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order have been cancelled successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": â€œInvalid request or headers.â€�}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe user is not authorized to use the API. â€�}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe requested resource was not found.â€�}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+            
+            
+/order/fulfillment:
+  post:
+      description: fulfillment update from warehouse to channel
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+              {  
+                 "FULFILLMENT":{  
+                    "CUSTOMER_ORDER_ID":"495993585760",
+                    "TRACKING_NUMBERS":[  
+                       "aef12345",
+                       "70et734z"
+                    ]
+                 }
+              }
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Shipment updated successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": â€œInvalid request or headers.â€�}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe user is not authorized to use the API. â€�}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe requested resource was not found.â€�}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
+                        
+
+/product/inventory/update:
+  post:
+      description: Inventory update from warehouse to channel
+      queryParameters:
+        channel:
+          description: Channel name
+          required: true
+          type: string
+          example: elyx-us
+        warehouse:
+          description: Warehouse name
+          required: true
+          type: string
+          example: MM
+      body:
+        application/json:
+          example: |
+                {
+                  "PRODUCT_IDS":
+                  [
+                      {
+                          "PRODUCT_ID": "8113327240",
+                          "QTY":"11"
+                      },
+                      {
+                          "PRODUCT_ID": "9346345928",
+                          "QTY":"5" 
+                      }
+                  ] 
+                }
+      responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Invetory updated successfully!"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": â€œInvalid request or headers.â€�}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe user is not authorized to use the API. â€�}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe requested resource was not found.â€�}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}   
+
+/sc/order:
+  post:
+    description: send order request
+    queryParameters:
+      channel:
+        description: Channel name
+        required: true
+        type: string
+        example: elyx-us
+      warehouse:
+        description: Warehouse name
+        required: true
+        type: string
+        example: MM
+    body:
+      application/json:
+        example: |
+            {
+            "strAccessCode":"SDGF886537522",
+            "strUser":"TESTER",
+            "CUSTOMER_ORDER_ID":"TEST12345",
+            "LINE_NO":"1",
+            "ORDER_DATE":"11/25/2017",
+            "SHIP_TO_NAME1":"Ian",
+            "SHIP_TO_NAME2":"Rush",
+            "SHIP_TO_ADDRESS_1":"3768 Milliken Avenue # A",
+            "SHIP_TO_ADDRESS_2":"",
+            "SHIP_TO_CITY":"Eastvale",
+            "SHIP_TO_STATE":"CA",
+            "SHIP_TO_ZIPCODE":"91752",
+            "SHIP_TO_COUNTRY_CODE":"US",
+            "SHIP_TO_PHONE":"(909) 930-0800",
+            "BILL_TO_NAME1":"Ian",
+            "BILL_TO_NAME2":"Rush",
+            "BILL_TO_ADDRESS_1":"3768 Milliken Avenue # A ",
+            "BILL_TO_ADDRESS_2":"",
+            "BILL_TO_CITY":" Eastvale ",
+            "BILL_TO_STATE":"CA",
+            "BILL_TO_ZIPCODE":"91752",
+            "BILL_TO_COUNTRY_CODE":"US",
+            "BILL_TO_PHONE":"(909) 930-0800",
+            "SHIP_TO_EMAIL":"Ian_Rush@mentormedia.com",
+            "PRODUCT_ID":" TEST-SKU_1",
+            "SNO":"",
+            "QTY":"5",
+            "COMPANY_NAME":"Mentor Media Ltd",
+            "COMPANY_VAT_ID":"",
+            "SHIP_CARRIER":"3001",
+            "SHIP_SERVICE":"PREPAID",
+            "SHIP_ACCOUNT":"",
+            "ORDER_NOTES":"",
+            "CARRIER_NOTES":"",
+            "USER_3":""
+            }
+    responses:
+        200:
+            description: SUCCESS
+            body:
+                application/json:
+                    example: |
+                        {"message": "Order has been placed successfully"}
+        400:
+            description: BAD REQUEST
+            body:
+                application/json:
+                    example: |
+                       {"error": â€œInvalid request or headers.â€�}
+        401:
+            description: UNAUTHORIZED
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe user is not authorized to use the API. â€�}
+        404:
+            description: NOT FOUND
+            body:
+                application/json:
+                    example: |
+                        {"error": â€œThe requested resource was not found.â€�}         
+        500:
+            description: INTERNAL ERROR
+            body:
+                application/json:
+                    example: |
+                        {"error": "Internal Error"}
